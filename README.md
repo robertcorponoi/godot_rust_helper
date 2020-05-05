@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="250" height="250" src="https://raw.githubusercontent.com/robertcorponoi/graphics/master/godot_rust_helper/godot_rust_helper-logo.png">
+  <img width="250" height="250" src="https://raw.githubusercontent.com/robertcorponoi/graphics/master/godot-rust-helper/godot-rust-helper-logo.png">
 </p>
 
 <h1 align="center">Godot Rust Helper</h1>
