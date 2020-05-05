@@ -1,5 +1,0 @@
-[general]
-name = "platformer_modules"
-path = "C:\\Users\\Bob\\Documents\\Projects\\godot_rust_helper\\tests\\platformer_modules"
-targets = ["windows"]
-modules = []

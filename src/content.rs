@@ -51,6 +51,7 @@ extern crate gdnative;
 fn init(handle: gdnative::init::InitHandle) {{
 {}
 }}
+
 godot_gdnative_init!();
 godot_nativescript_init!(init);
 godot_gdnative_terminate!();"#,
@@ -66,22 +67,39 @@ godot_gdnative_terminate!();"#,
 ///
 /// `name` - The name of the module.
 pub fn create_mod_file(name: &str) -> String {
+    let init_string = format!(r#"fn _init(_owner: gdnative::Node) -> Self {{
+{}
+{}"#,
+        format!("\t\t{}", name),
+        "\t}"
+    );
+
+    let ready_string = format!(
+        r#"#[export]
+{}
+{}
+{}"#,
+        "\tfn _ready(&self, _owner: gdnative::Node) {",
+        format!("\t\t{}", "godot_print!(\"hello, world.\");"),
+        "\t}"
+    );
+
     let mod_file = format!(
         r#"#[derive(gdnative::NativeClass)]
 #[inherit(gdnative::Node)]
 pub struct {};
+
 #[gdnative::methods]
 impl {} {{
-    fn _init(_owner: gdnative::Node) -> Self {{
-    {}
-    }}
-    #[export]
-    fn _ready(&self, _owner: gdnative::Node) {{
-    godot_print!("hello, world.")
-    }}
+{}
+
+{}
 }}
-`"#,
-        name, name, name
+"#,
+        name,
+        name,
+        format!("\t{}", init_string),
+        format!("\t{}", ready_string)
     );
 
     return mod_file;

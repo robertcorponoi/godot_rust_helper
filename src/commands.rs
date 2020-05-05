@@ -1,12 +1,18 @@
 use std::env::{current_dir, set_current_dir};
-use std::fs::read_to_string;
-use std::fs::write;
+use std::fs::{read_to_string, remove_file, write};
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
+use std::sync::mpsc::channel;
 
 use crate::configs::{Cargo, Config, ConfigGeneral};
 use crate::content;
 use crate::utils;
+
+use chrono::prelude::*;
+use colored::*;
+use notify::{op, raw_watcher, RawEvent, RecursiveMode, Watcher};
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// Creates the library that will contain your Rust modules.
 ///
@@ -15,28 +21,30 @@ use crate::utils;
 /// `destination` - The destination directory for the library.
 /// `godot_project_dir` - The directory that contains the Godot project that the modules are for.
 /// `targets` - The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
-pub fn create_library(
-    destination: std::path::PathBuf,
-    godot_project_dir: std::path::PathBuf,
-    targets: String,
-) {
-    info!("creating library");
+pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets: String) {
+    println!("{}", "creating library".white());
 
     let dest_path = if !destination.is_absolute() {
-        utils::absolute_path(destination).expect("Unable to create absolute path from destination path").as_path().to_owned()
+        utils::absolute_path(destination)
+            .expect("Unable to create absolute path from destination path")
+            .as_path()
+            .to_owned()
     } else {
         Path::new(&destination).to_path_buf()
     };
 
     let godot_path = if !godot_project_dir.is_absolute() {
-        utils::absolute_path(godot_project_dir).expect("Unable to create absolute path from destination path").as_path().to_owned()
+        utils::absolute_path(godot_project_dir)
+            .expect("Unable to create absolute path from destination path")
+            .as_path()
+            .to_owned()
     } else {
         Path::new(&godot_project_dir).to_path_buf()
     };
 
     // Check to see if the library already exists.
     if dest_path.exists() {
-        error!("A library with the specified destination already exists, please choose another destination for the library.");
+        println!("A library with the specified destination already exists, please choose another destination for the library.");
         exit(1);
     }
 
@@ -44,7 +52,7 @@ pub fn create_library(
     // In order for it to be considered valid, it needs to have a project.godot file.
     let godot_project_path = godot_path.join("project.godot");
     if !godot_project_path.exists() {
-        error!("The godot project dir provided is not valid.");
+        println!("The godot project dir provided is not valid.");
         exit(1);
     }
 
@@ -68,23 +76,29 @@ pub fn create_library(
     {
         Ok(_v) => (),
         Err(e) => {
-            error!("{}", e);
+            println!("{}", e);
             exit(1);
         }
     }
 
     // Add the correct tags and dependencies to the library's Cargo.toml.
     set_current_dir(&dest_basename).expect("Unable to change to library directory");
-    println!("AAAAAAAAAAAAAAAAAAAAAAAAAAAA{:?}", current_dir());
-    let cargo_toml_string = read_to_string("Cargo.toml").expect("Unable to resdfsdfsdfsdfsdfad Cargo.toml");
+    let cargo_toml_string =
+        read_to_string("Cargo.toml").expect("Unable to resdfsdfsdfsdfsdfad Cargo.toml");
     let cargo_toml: Cargo = toml::from_str(&cargo_toml_string).expect("Unable to parse Cargo.toml");
 
     let cargo_toml_str = toml::to_string(&cargo_toml).expect("Unable to convert to toml to string");
 
-    match write("Cargo.toml", cargo_toml_str.replace("\\", "")) {
+    match write(
+        "Cargo.toml",
+        cargo_toml_str
+            .replace("\\", "")
+            .replace("\"{", "{")
+            .replace("}\"", "}"),
+    ) {
         Ok(_v) => (),
         Err(e) => {
-            error!("There was a problem creating the library: {}", e);
+            println!("There was a problem creating the library: {}", e);
             exit(1);
         }
     }
@@ -95,7 +109,7 @@ pub fn create_library(
 
     for t in &targets_split {
         if !valid_targets.iter().any(|&i| i == t) {
-            error!("An invalid target was specified: {}", t);
+            println!("An invalid target was specified: {}", t);
             exit(1);
         }
     }
@@ -103,7 +117,8 @@ pub fn create_library(
     // Create the config and write it to a file.
     let config_general = ConfigGeneral {
         name: dest_basename_string.to_string(),
-        path: dest_path.to_owned(),
+        lib_path: dest_path.to_owned(),
+        godot_path: godot_path.to_owned(),
         targets: targets_split,
         modules: vec![],
     };
@@ -116,7 +131,7 @@ pub fn create_library(
     match write("godot-rust-helper.toml", config_string) {
         Ok(_v) => (),
         Err(e) => {
-            error!("There was a problem creating the config file: {}", e);
+            println!("There was a problem creating the config file: {}", e);
             exit(1);
         }
     }
@@ -125,7 +140,7 @@ pub fn create_library(
     match write("src/lib.rs", content::create_initial_lib_file()) {
         Ok(_v) => (),
         Err(e) => {
-            error!("There was a problem writing to the lib file: {}", e);
+            println!("There was a problem writing to the lib file: {}", e);
             exit(1);
         }
     }
@@ -134,7 +149,10 @@ pub fn create_library(
     // let dir_to_change_to = current_dir().parent().parent();
     if !godot_path.is_absolute() {
         let current = current_dir().expect("Unable to get parent dir");
-        let parent = current.as_path().parent().expect("Unable to get parent dir");
+        let parent = current
+            .as_path()
+            .parent()
+            .expect("Unable to get parent dir");
         let grandparent = parent.parent().expect("Unable to get grandparent dir");
 
         set_current_dir(&grandparent).expect("Unable to change to grandparent dir");
@@ -144,7 +162,10 @@ pub fn create_library(
     match std::fs::create_dir_all(godot_rust_modules_path) {
         Ok(_v) => (),
         Err(e) => {
-            error!("There was a problem creating the the rust modules folder: {}", e);
+            println!(
+                "There was a problem creating the the rust modules folder: {}",
+                e
+            );
             exit(1);
         }
     }
@@ -162,12 +183,12 @@ pub fn create_library(
     match write(gdnlib_path, gdnlib.replace("\\", "")) {
         Ok(_v) => (),
         Err(e) => {
-            error!("There was a problem creating the gdnlib file: {}", e);
+            println!("There was a problem creating the gdnlib file: {}", e);
             exit(1);
         }
     }
 
-    info!("library created successfully");
+    println!("{}", "library created".green());
 }
 
 /// Creates a new module inside of the library.
@@ -176,15 +197,14 @@ pub fn create_library(
 ///
 /// `name` - The class name of the module to create; examples include 'Player', 'Princess', 'Mob', 'HUD', etc.
 pub fn create_module(name: &str) {
-    info!("creating module");
+    println!("{}", "creating module".white());
 
     // Check to see if we are in the directory of a library created with the `new` command.
     // This is done by checking to see if there is a godot-rust-helper.toml configuration file present in the current directory.
-    let current_dir_path =
-        std::env::current_dir().expect("Unable to get current directory");
+    let current_dir_path = std::env::current_dir().expect("Unable to get current directory");
     let config_path = Path::new(&current_dir_path).join("godot-rust-helper.toml");
     if !config_path.exists() {
-        error!(
+        println!(
             "The create command can only be used inside of a library created with the new command"
         );
         exit(1);
@@ -199,7 +219,7 @@ pub fn create_module(name: &str) {
     let mut config: Config = toml::from_str(&config_string).expect("Unable to parse config");
 
     if config.general.modules.iter().any(|i| i == name) {
-        error!("A module with the same name already exists");
+        println!("A module with the same name already exists");
         exit(1);
     }
 
@@ -210,7 +230,7 @@ pub fn create_module(name: &str) {
     match write(config_path, new_config_string) {
         Ok(_v) => (),
         Err(e) => {
-            error!("There was a problem creating the module: {}", e);
+            println!("There was a problem creating the module: {}", e);
             exit(1);
         }
     }
@@ -222,7 +242,7 @@ pub fn create_module(name: &str) {
     match write(lib_file_path, lib_file) {
         Ok(_v) => (),
         Err(e) => {
-            error!("There was a problem creating the lib file: {}", e);
+            println!("There was a problem creating the lib file: {}", e);
             exit(1);
         }
     }
@@ -238,10 +258,257 @@ pub fn create_module(name: &str) {
     match write(mod_file_path, mod_file) {
         Ok(_v) => (),
         Err(e) => {
-            error!("There was a problem creating the module: {}", e);
+            println!("There was a problem creating the module: {}", e);
             exit(1);
         }
     }
 
-    info!("module created successfully");
+    println!("{}", "module created".green());
+}
+
+/// Removes a created module from the config and filesystem.
+///
+/// # Arguments
+///
+/// `name` The name of the module to destroy. This should be the same name that was provided when it was created.
+pub fn destroy_module(name: &str) {
+    println!("{}", "destroying module".white());
+
+    // Check to see if we are in the directory of a library created with the `new` command.
+    // This is done by checking to see if there is a godot-rust-helper.toml configuration file present in the current directory.
+    let current_dir_path = std::env::current_dir().expect("Unable to get current directory");
+    let config_path = Path::new(&current_dir_path).join("godot-rust-helper.toml");
+    if !config_path.exists() {
+        println!(
+            "The create command can only be used inside of a library created with the new command"
+        );
+        exit(1);
+    }
+
+    // Split the module name on capital letters and then make it all lowercase to use when removing the module file.
+    let name_normalized = utils::format_str(name.to_string());
+
+    // Remove the module from the config file and save it again.
+    let config_string =
+        read_to_string(&config_path).expect("Unable to read godot-rust-helper.toml config file");
+    let mut config: Config = toml::from_str(&config_string).expect("Unable to parse config");
+
+    config.general.modules.retain(|x| *x != name);
+    let new_config_string = toml::to_string(&config).expect("Unable to convert config to string");
+
+    match write(config_path, new_config_string) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("There was a problem destroying the module: {}", e);
+            exit(1);
+        }
+    }
+
+    // Create a new src/lib.rs file based on the modules that are left over.
+    let lib_file = if config.general.modules.len() == 0 {
+        content::create_initial_lib_file()
+    } else {
+        content::create_lib_file(&config.general.modules)
+    };
+
+    let lib_file_path = current_dir_path.join("src").join("lib.rs");
+
+    match write(lib_file_path, lib_file) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("There was a problem creating the lib file: {}", e);
+            exit(1);
+        }
+    }
+
+    // Remove the module's .rs file.
+    let mod_file_path = current_dir_path
+        .join("src")
+        .join(format!("{}.rs", name_normalized));
+    match remove_file(mod_file_path) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("There was a problem removing the module file: {}", e);
+            exit(1);
+        }
+    }
+
+    println!("{}", "module destroyed".green());
+}
+
+// /// Imports a Rust module from another library into this one.
+// ///
+// /// # Arguments
+// ///
+// /// `path` The path to the library to import the module from.
+// /// `name` The name of the module to import. This should be the same name that was provided when it was created.
+// pub fn import_module(lib_path: PathBuf, name: &str) {
+//     info!("importing module");
+
+//     let name_normalized = utils::format_str(name.to_string());
+
+//     // Check to see if we are in the directory of a library created with the `new` command.
+//     // This is done by checking to see if there is a godot-rust-helper.toml configuration file present in the current directory.
+//     let current_dir_path = std::env::current_dir().expect("Unable to get current directory");
+//     let config_path = Path::new(&current_dir_path).join("godot-rust-helper.toml");
+//     if !config_path.exists() {
+//         error!(
+//             "The create command can only be used inside of a library created with the new command"
+//         );
+//         exit(1);
+//     }
+
+//     // Normalize the path so we can work with it easier.
+//     let lib_path_normalized = if !lib_path.is_absolute() {
+//         utils::absolute_path(lib_path)
+//             .expect("Unable to create absolute path from lib path")
+//             .as_path()
+//             .to_owned()
+//     } else {
+//         Path::new(&lib_path).to_path_buf()
+//     };
+//     // Check to see if the lib path exits.
+//     if !lib_path_normalized.exists() {
+//         error!("The path to the library that contains the module to import is not valid");
+//         exit(1);
+//     }
+
+//     // Check to see if the path to the library to import the module from was created with godot-rust-helper.
+//     let lib_config_path = lib_path_normalized.join("godot-rust-helper.toml");
+//     if !lib_config_path.exists() {
+//         error!("The library to import the module from was not created with godot-rust-helper");
+//         exit(1);
+//     }
+
+//     // Check to see if the module to import exists in the target's config.
+//     let lib_config_string =
+//         read_to_string(&lib_config_path).expect("Unable to read target library's config");
+//     let lib_config: Config =
+//         toml::from_str(&lib_config_string).expect("Unable to parse target library's config");
+//     if !lib_config.general.modules.iter().any(|i| i == name) {
+//         error!("The module to import does not exist in the target library's config");
+//         exit(1);
+//     }
+
+//     // Add the module to the current library's config.
+//     // let config_string = read_to_string(&config_path).expect("Unable to read config");
+//     // let mut config: Config = toml::from_str(&config_string).expect("Unable to parse config");
+
+//     // config.general.modules.push(name.to_string());
+//     // let new_config_string = toml::to_string(&config).expect("Unable to convert config to string");
+
+//     // match write(config_path, new_config_string) {
+//     //     Ok(_v) => (),
+//     //     Err(e) => {
+//     //         error!("There was a problem importing the module: {}", e);
+//     //         exit(1);
+//     //     }
+//     // }
+
+//     // // Copy the module into the current library.
+//     // let path_to_target_mod = lib_path.join("src").join(format!("{}.rs"), name_normalized));
+//     // let path_to_current_mod =
+// }
+
+/// Runs the `cargo build` command and copies the target files into the Godot project directory.
+pub fn build_library() {
+    let version_notice = format!(
+        "{}{}",
+        "godot_rust_helper v".white().underline(),
+        VERSION.white().underline()
+    );
+    println!("{}", version_notice);
+    println!("{}", "building...".cyan());
+
+    let root_dir = utils::find_file("godot-rust-helper.toml".to_string());
+
+    // Get the config so that we can check the targets later.
+    let config_path = root_dir.join("godot-rust-helper.toml");
+    let config_string =
+        read_to_string(&config_path).expect("Unable to read godot-rust-helper.toml config file");
+    let config: Config = toml::from_str(&config_string).expect("Unable to parse config");
+
+    // Run the `cargo build` command to generate the target files.
+    std::process::Command::new("cargo")
+        .arg("build")
+        .output()
+        .expect("Unable to execute cargo build");
+
+    // Get the path to where the build files are stored.
+    let targets_dir = root_dir.join("target").join("debug");
+    for target in &config.general.targets {
+        let ext = if target == "linux" {
+            "so"
+        } else if target == "osx" {
+            "dylib"
+        } else if target == "windows" {
+            "dll"
+        } else {
+            exit(1);
+        };
+        let extra = if cfg!(windows) { "" } else { "lib" };
+
+        let file = format!("{}{}.{}", extra, config.general.name, ext);
+        let file_path = targets_dir.join(file);
+
+        std::process::Command::new("cp")
+            .arg(file_path)
+            .arg(&config.general.godot_path.join("rust-modules"))
+            .output()
+            .expect("Unable to copy build files");
+
+        println!("{}", "build complete".green());
+    }
+}
+
+/// Watches for changes in the src directory of the library and then automatically runs the build command.
+/// This is used when build --watch is called.
+pub fn watch_library() {
+    let lib_dir = utils::find_file("godot-rust-helper.toml".to_string());
+    let (tx, rx) = channel();
+
+    build_with_time_log();
+
+    let mut last_checked = chrono::offset::Local::now();
+
+    let mut watcher = raw_watcher(tx).expect("Unable to create watcher");
+    watcher
+        .watch(lib_dir.join("src"), RecursiveMode::Recursive)
+        .expect("Unable to watch src directory");
+
+    loop {
+        match rx.recv() {
+            Ok(RawEvent {
+                path: Some(_path),
+                op: Ok(op),
+                cookie: _,
+            }) => {
+                if op.contains(op::WRITE) {
+                    let now = chrono::offset::Local::now();
+                    if (now - last_checked).num_seconds() == 0 {
+                        build_with_time_log();
+                    }
+                    last_checked = chrono::offset::Local::now();
+                }
+            }
+            Ok(event) => println!("broken event: {:?}", event),
+            Err(e) => println!("watch error: {:?}", e),
+        }
+    }
+}
+
+/// Runs the build command and logs the time.
+/// This is used by the `watch_library` method to run the build and show the timestamp of when the build was last run.
+fn build_with_time_log() {
+    let dt: DateTime<Local> = Local::now();
+    let dt_formatted = dt.format("%Y-%m-%d %H:%M:%S").to_string();
+
+    build_library();
+
+    println!("");
+    println!(
+        "[{}] {}",
+        dt_formatted.white(),
+        "waiting for changes...".white()
+    );
 }

@@ -1,10 +1,9 @@
 #[macro_use]
-extern crate log;
 
-mod utils;
 mod commands;
 mod configs;
 mod content;
+mod utils;
 
 use structopt::StructOpt;
 
@@ -38,10 +37,22 @@ enum GodotRustHelper {
 		#[structopt()]
 		name: String,
 	},
+	/// Removes a module created with `create`.
+	/// The name passed to this command should be the same name that was passed when the module was created.
+	Destroy {
+		/// The name of the module to destory.
+		#[structopt()]
+		name: String,
+	},
+	/// Runs the `cargo build` command and copies the build files to the Godot project.
+	Build {
+		// Indicates whether the godot_rust_helper should watch the project for changes and rebuild automatically or not.
+		#[structopt(long, short)]
+		watch: bool,
+	},
 }
 
 fn main() {
-	env_logger::init();
 	match GodotRustHelper::from_args() {
 		// When the `new` command is used we run the `commands::create_library` function to create a new library for the Rust modules.
 		GodotRustHelper::New {
@@ -51,12 +62,22 @@ fn main() {
 			// extensions,
 		} => {
 			commands::create_library(destination, godot_project_dir, targets);
-		},
+		}
 		// When the `create` command is used we run the `commands::create_module` function to create a module inside of the library.
-		GodotRustHelper::Create {
-			name,
-		} => {
+		GodotRustHelper::Create { name } => {
 			commands::create_module(&name.to_owned());
+		}
+		// When the `destroy` command is used we run the `commands::destory_module` function to remove a module inside of the library
+		GodotRustHelper::Destroy { name } => {
+			commands::destroy_module(&name.to_owned());
+		}
+		// When the `build` command is used we run the `commands::build_library` function to generate the build files and copy them to Godot project.
+		GodotRustHelper::Build { watch } => {
+			if watch {
+				commands::watch_library()
+			} else {
+				commands::build_library()
+			}
 		}
 	}
 }

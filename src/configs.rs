@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 /// The structure of the Cargo.toml file created by the `godot-rust-helper new` command.
@@ -30,6 +31,7 @@ pub struct CargoPackage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CargoLib {
 	/// The type of crate it is.
+	#[serde(rename = "crate-type")]
 	crate_type: Vec<String>,
 }
 
@@ -55,12 +57,12 @@ fn create_cargo_lib() -> CargoLib {
 /// Returns the gdnative dependency to add to the Cargo.toml dependencies.
 /// This is used by the CargoDependencies struct to add the gdnative dependency that is necessary.
 fn add_gdnative_dep() -> String {
-	return String::from("gdnative = { git = \"https://github.com/GodotNativeTools/godot-rust\" }");
+	return String::from("{ git = \"https://github.com/GodotNativeTools/godot-rust\" }");
 }
 
 /// Returns the godot_rust_helper_extensions dependency to add to the Cargo.toml dependencies.
 pub fn add_extensions_dep() -> String {
-	return String::from("godot_rust_helper_extensions = { git = \"https://github.com/robertcorponoi/godot-rust-helper-extensions\" }");
+	return String::from("{ git = \"https://github.com/robertcorponoi/godot-rust-helper-extensions\" }");
 }
 
 /// The structure of the godot-rust-helper.toml config file created by the `godot-rust-helper new`
@@ -76,7 +78,9 @@ pub struct ConfigGeneral {
 	/// The name of the library.
 	pub name: String,
 	/// The path to the library.
-	pub path: std::path::PathBuf,
+	pub lib_path: PathBuf,
+	// The path to the godot project.
+	pub godot_path: PathBuf,
 	/// The build targets.
 	pub targets: Vec<String>,
 	/// The modules that have been created.
