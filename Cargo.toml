@@ -7,7 +7,7 @@ description = "A simple CLI tool to help you create and update Rust modules for 
 homepage = "https://github.com/robertcorponoi/godot_rust_helper"
 repository = "https://github.com/robertcorponoi/godot_rust_helper"
 readme = "README.md"
-keywords = ["godot", "rust", "helper", "module", "modules", "NativeScript", "gdnlib"]
+keywords = ["godot", "rust", "module", "NativeScript", "gdnlib"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
