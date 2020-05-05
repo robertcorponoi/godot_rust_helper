@@ -2,6 +2,12 @@
 name = "godot_rust_helper"
 version = "1.0.0"
 authors = ["Robert Corponoi <robertcorponoi@gmail.com>"]
+license = "MIT"
+description = "A simple CLI tool to help you create and update Rust modules for your Godot projects"
+homepage = "https://github.com/robertcorponoi/godot_rust_helper"
+repository = "https://github.com/robertcorponoi/godot_rust_helper"
+readme = "README.md"
+keywords = ["godot", "rust", "helper", "module", "modules", "NativeScript", "gdnlib"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
