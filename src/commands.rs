@@ -429,10 +429,19 @@ pub fn build_library() {
     let config: Config = toml::from_str(&config_string).expect("Unable to parse config");
 
     // Run the `cargo build` command to generate the target files.
-    std::process::Command::new("cargo")
+    // std::process::Command::new("cargo")
+    //     .arg("build")
+    //     .output()
+    //     .expect("Unable to execute cargo build");
+    let status = std::process::Command::new("cargo")
         .arg("build")
-        .output()
-        .expect("Unable to execute cargo build");
+        .status()
+        .expect("Unable to run cargo build");
+
+    if !status.success() {
+        println!("{}", "build failed".red());
+        exit(1);
+    }
 
     // Get the path to where the build files are stored.
     let targets_dir = root_dir.join("target").join("debug");
