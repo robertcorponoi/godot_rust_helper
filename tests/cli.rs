@@ -25,7 +25,7 @@ fn new_has_correct_cargo_toml() -> Result<(), Box<dyn std::error::Error>> {
         cargo_toml_split[10],
         "gdnative = { git = \"https://github.com/GodotNativeTools/godot-rust\" }"
     );
-    assert_eq!(cargo_toml_split[11], "godot_rust_helper_extensions = { git = \"https://github.com/robertcorponoi/godot-rust-helper-extensions\" }");
+    assert_eq!(cargo_toml_split[11], "godot_rust_helper_ext = { git = \"https://github.com/robertcorponoi/godot_rust_helper_ext\" }");
 
     cleanup_after_test();
 
@@ -588,6 +588,7 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn build_library() -> Result<(), Box<dyn std::error::Error>> {
     ensure_correct_dir();
+
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
     cmd.arg("new").arg("platformer_modules").arg("platformer");
 

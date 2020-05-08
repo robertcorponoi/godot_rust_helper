@@ -54,6 +54,10 @@ $ godot_rust_helper new breakout-modules ~/Documents/projects/breakout windows,l
 
 **Note:** The `src/lib.rs` file is completely managed by godot_rust_helper and should not be modified. Any modifications to the file will result in the modules not functioning properly or they will be overwritten when a module is created/destroyed. Custom mods can be added to the file (coming soon).
 
+**Note:** Each instance of the library comes with `godot_rust_helper_extensions` as a dependency which is going to contain methods to make things easier (such as getting typed nodes) and include methods that are not a part of gdnative but are in gdscript. You do not have to use any extensions if you don't want to but if you are interested in them, check out the extensions [here](https://github.com/robertcorponoi/godot_rust_helper_ext).
+
+If you are getting an error that says that the crate doesn't exist it's because the name of the extension was not right the first time around and it was fixed 1.0.2. To fix it you can update and create the library again or simply go to your Cargo.toml and change `godot_rust_helper_extensions` to `godot_rust_helper_ext`.
+
 ## **Step 2: Creating Modules**
 
 Now that you've created the library, you can go into the newly created folder and see the config file. This config file contains the path to the Godot project directory and the targets passed from the `new` command. This config file should not be modified manually as godot_rust_helper depends on it heavily.

@@ -43,7 +43,7 @@ pub struct CargoDependencies {
 	gdnative: String,
 	/// Optional helper methods.
 	#[serde(default = "add_extensions_dep")]
-	pub godot_rust_helper_extensions: String,
+	pub godot_rust_helper_ext: String,
 }
 
 /// Returns the contents of what should appear under the [lib] tag.
@@ -62,7 +62,7 @@ fn add_gdnative_dep() -> String {
 
 /// Returns the godot_rust_helper_extensions dependency to add to the Cargo.toml dependencies.
 pub fn add_extensions_dep() -> String {
-	return String::from("{ git = \"https://github.com/robertcorponoi/godot-rust-helper-extensions\" }");
+	return String::from("{ git = \"https://github.com/robertcorponoi/godot_rust_helper_ext\" }");
 }
 
 /// The structure of the godot-rust-helper.toml config file created by the `godot-rust-helper new`
