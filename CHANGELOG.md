@@ -1,3 +1,7 @@
+## 1.1.0 / 2020-05-10
+- [FEATURE] Added rebase command that allows you to easily update the config of another cloned/downloaded godot_rust_helper project.
+- [MISC] Changed to using dunce for absolute path resolution.
+
 ## 1.0.2 / 2020-05-08
 - [HOTFIX] Renamed godot_rust_helper_extensions to godot_rust_helper_ext.
 - [DOCS] Added information about extensions.

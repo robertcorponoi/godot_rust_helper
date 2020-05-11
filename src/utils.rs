@@ -5,6 +5,7 @@ use path_clean::PathClean;
 use std::env;
 use std::io;
 use std::path::{Path, PathBuf};
+extern crate dunce;
 
 /// Returns the path of the specified file.
 ///
@@ -63,12 +64,23 @@ where
     P: AsRef<Path>,
 {
     let path = path.as_ref();
-    let absolute_path = if path.is_absolute() {
+    let mut absolute_path = if path.is_absolute() {
         path.to_path_buf()
     } else {
         env::current_dir()?.join(path)
     }
     .clean();
+
+    match dunce::canonicalize(&absolute_path) {
+        Ok(v) => absolute_path = v,
+        Err(_e) => {
+            let parent = &absolute_path.parent().expect("Unable to parse path");
+            let basename = &absolute_path.file_stem().expect("Unable to parse path");
+            let parent_canon = dunce::canonicalize(parent).expect("Unable to parse path");
+
+            absolute_path = parent_canon.join(basename);
+        }
+    }
 
     Ok(absolute_path)
 }

@@ -142,8 +142,6 @@ fn new_has_correct_gdnlib_all_targets() -> Result<(), Box<dyn std::error::Error>
         .expect("Unable to read gdnlib");
     let gdnlib_split = gdnlib.split("\n").collect::<Vec<&str>>();
 
-    println!("{:?}", gdnlib_split);
-
     assert_eq!(gdnlib_split[0], "[entry]");
     assert_eq!(gdnlib_split[1], "");
     assert_eq!(

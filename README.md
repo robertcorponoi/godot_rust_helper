@@ -156,6 +156,29 @@ $ godot_rust_helper destroy Player
 $ godot_rust_helper destroy HUD
 ```
 
+### **rebase**
+
+Changes the path of the project, godot project directory, and optionally the targets in the config if you cloned/downlaoded the project from elsewhere.
+
+This command has to be used from inside the project you want to rebase.
+
+```bash
+$ godot_rust_helper rebase <path_to_game> [targets]
+```
+
+- **path_to_game** The path to godot game on your file system.
+- **targets** Optionally change the targets.
+
+**examples:**
+
+```bash
+$ godot_rust_helper rebase ../path/to/game
+```
+
+```bash
+$ godot_rust-helper rebase ../path/to/game --targets=linux,osx
+```
+
 ## **Tests**
 
 ```bash

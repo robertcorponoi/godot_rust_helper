@@ -26,9 +26,6 @@ enum GodotRustHelper {
 		/// The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
 		#[structopt(long, short, default_value = "windows")]
 		targets: String,
-		// /// Indicates whether an optional extensions module will be added for ease of use functions such as getting typed nodes.
-		// #[structopt(long, short)]
-		// extensions: bool,
 	},
 	/// Creates a new module inside of the library.
 	/// The name passed to this command should be the class name of the module. Class names must start with capital letters. Examples include 'Player', 'Princess', 'Mob', 'HUD', etc.
@@ -49,6 +46,16 @@ enum GodotRustHelper {
 		// Indicates whether the godot_rust_helper should watch the project for changes and rebuild automatically or not.
 		#[structopt(long, short)]
 		watch: bool,
+	},
+	/// Changes the project path and the godot project path in the config and optionally sets new targets.
+	/// This is useful if you cloned a project using godot_rust_helper.
+	Rebase {
+		/// The directory that contains the project.godot file of the game that the modules are for.
+		#[structopt(parse(from_os_str))]
+		godot_project_dir: std::path::PathBuf,
+		/// The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
+		#[structopt(long, short, default_value = "")]
+		targets: String,
 	},
 }
 
@@ -78,6 +85,13 @@ fn main() {
 			} else {
 				commands::build_library()
 			}
+		}
+		// When the `rebase` command is used we run the `commands::rebase` function to update the config file.
+		GodotRustHelper::Rebase {
+			godot_project_dir,
+			targets,
+		} => {
+			commands::rebase(godot_project_dir, targets);
 		}
 	}
 }
