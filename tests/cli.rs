@@ -1,12 +1,14 @@
 use assert_cmd::prelude::*;
 
-use std::fs::read_to_string;
+use std::env::set_current_dir;
+use std::error::Error;
+use std::fs::{read_to_string, remove_dir_all, remove_file};
 use std::path::Path;
 use std::process::Command;
 
 // It should create a new library with the default Cargo.toml file.
 #[test]
-fn new_has_correct_cargo_toml() -> Result<(), Box<dyn std::error::Error>> {
+fn new_has_correct_cargo_toml() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -34,7 +36,7 @@ fn new_has_correct_cargo_toml() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create a new library with the default targets set in the config.
 #[test]
-fn new_has_correct_default_config() -> Result<(), Box<dyn std::error::Error>> {
+fn new_has_correct_default_config() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -46,12 +48,14 @@ fn new_has_correct_default_config() -> Result<(), Box<dyn std::error::Error>> {
         read_to_string("platformer_modules/godot-rust-helper.toml").expect("Unable to read config");
     let config_split = config.split("\n").collect::<Vec<&str>>();
 
-    assert_eq!(config_split[0], "[general]");
     assert_eq!(config_split[1], "name = \"platformer_modules\"");
-    assert_eq!(config_split[2], "lib_path = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[3], "godot_path = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[4], "targets = [\"windows\"]");
-    assert_eq!(config_split[5], "modules = []");
+    assert_eq!(config_split[2], "targets = [\"windows\"]");
+    assert_eq!(config_split[3], "modules = []");
+    assert_eq!(config_split[4], "");
+    assert_eq!(config_split[5], "[paths]");
+    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[8], "output = \"\"");
 
     cleanup_after_test();
 
@@ -60,7 +64,7 @@ fn new_has_correct_default_config() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create a new library with a gdnlib containing the default targets.
 #[test]
-fn new_has_correct_gdnlib_default_targets() -> Result<(), Box<dyn std::error::Error>> {
+fn new_has_correct_gdnlib_default_targets() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -68,7 +72,48 @@ fn new_has_correct_gdnlib_default_targets() -> Result<(), Box<dyn std::error::Er
 
     cmd.assert().success();
 
-    let gdnlib = read_to_string("platformer/rust-modules/platformer_modules.gdnlib")
+    let gdnlib =
+        read_to_string("platformer/platformer_modules.gdnlib").expect("Unable to read gdnlib");
+    let gdnlib_split = gdnlib.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(gdnlib_split[0], "[entry]");
+    assert_eq!(gdnlib_split[1], "");
+    assert_eq!(
+        gdnlib_split[2],
+        "Windows.64=\"res://platformer_modules.dll\""
+    );
+    assert_eq!(gdnlib_split[3], "");
+    assert_eq!(gdnlib_split[4], "[dependencies]");
+    assert_eq!(gdnlib_split[5], "");
+    assert_eq!(gdnlib_split[6], "Windows.64=[  ]");
+    assert_eq!(gdnlib_split[7], "");
+    assert_eq!(gdnlib_split[8], "[general]");
+    assert_eq!(gdnlib_split[9], "");
+    assert_eq!(gdnlib_split[10], "singleton=false");
+    assert_eq!(gdnlib_split[11], "load_once=true");
+    assert_eq!(gdnlib_split[12], "symbol_prefix=\"godot_\"");
+    assert_eq!(gdnlib_split[13], "reloadable=true");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a library and place the gdnlib file in the specified output folder.
+#[test]
+fn new_specify_output_correct_gdnlib_location() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output");
+
+    cmd.assert().success();
+
+    let gdnlib = read_to_string("platformer/godot-rust-helper-output/platformer_modules.gdnlib")
         .expect("Unable to read gdnlib");
     let gdnlib_split = gdnlib.split("\n").collect::<Vec<&str>>();
 
@@ -76,7 +121,7 @@ fn new_has_correct_gdnlib_default_targets() -> Result<(), Box<dyn std::error::Er
     assert_eq!(gdnlib_split[1], "");
     assert_eq!(
         gdnlib_split[2],
-        "Windows.64=\"res://rust-modules/platformer_modules.dll\""
+        "Windows.64=\"res://godot-rust-helper-output/platformer_modules.dll\""
     );
     assert_eq!(gdnlib_split[3], "");
     assert_eq!(gdnlib_split[4], "[dependencies]");
@@ -97,7 +142,7 @@ fn new_has_correct_gdnlib_default_targets() -> Result<(), Box<dyn std::error::Er
 
 // It should create a new library with --targets=windows,linux,osx and include them in the config.
 #[test]
-fn new_has_correct_targets_config() -> Result<(), Box<dyn std::error::Error>> {
+fn new_has_correct_targets_config() -> Result<(), Box<dyn Error>> {
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
     cmd.arg("new")
         .arg("platformer_modules")
@@ -112,13 +157,16 @@ fn new_has_correct_targets_config() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(config_split[0], "[general]");
     assert_eq!(config_split[1], "name = \"platformer_modules\"");
-    assert_eq!(config_split[2], "lib_path = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[3], "godot_path = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
     assert_eq!(
-        config_split[4],
+        config_split[2],
         "targets = [\"windows\", \"linux\", \"osx\"]"
     );
-    assert_eq!(config_split[5], "modules = []");
+    assert_eq!(config_split[3], "modules = []");
+    assert_eq!(config_split[4], "");
+    assert_eq!(config_split[5], "[paths]");
+    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[8], "output = \"\"");
 
     cleanup_after_test();
 
@@ -127,7 +175,7 @@ fn new_has_correct_targets_config() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create a new library with --targets=windows,linux-osx and include them in the gdnlib.
 #[test]
-fn new_has_correct_gdnlib_all_targets() -> Result<(), Box<dyn std::error::Error>> {
+fn new_has_correct_gdnlib_all_targets() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -138,23 +186,20 @@ fn new_has_correct_gdnlib_all_targets() -> Result<(), Box<dyn std::error::Error>
 
     cmd.assert().success();
 
-    let gdnlib = read_to_string("platformer/rust-modules/platformer_modules.gdnlib")
-        .expect("Unable to read gdnlib");
+    let gdnlib =
+        read_to_string("platformer/platformer_modules.gdnlib").expect("Unable to read gdnlib");
     let gdnlib_split = gdnlib.split("\n").collect::<Vec<&str>>();
 
     assert_eq!(gdnlib_split[0], "[entry]");
     assert_eq!(gdnlib_split[1], "");
     assert_eq!(
         gdnlib_split[2],
-        "OSX.64=\"res://rust-modules/libplatformer_modules.dylib\""
+        "OSX.64=\"res://libplatformer_modules.dylib\""
     );
-    assert_eq!(
-        gdnlib_split[3],
-        "X11.64=\"res://rust-modules/libplatformer_modules.so\""
-    );
+    assert_eq!(gdnlib_split[3], "X11.64=\"res://libplatformer_modules.so\"");
     assert_eq!(
         gdnlib_split[4],
-        "Windows.64=\"res://rust-modules/platformer_modules.dll\""
+        "Windows.64=\"res://platformer_modules.dll\""
     );
     assert_eq!(gdnlib_split[5], "");
     assert_eq!(gdnlib_split[6], "[dependencies]");
@@ -177,7 +222,7 @@ fn new_has_correct_gdnlib_all_targets() -> Result<(), Box<dyn std::error::Error>
 
 // It should create a module and add an entry for it in the config file.
 #[test]
-fn create_add_module_to_config() -> Result<(), Box<dyn std::error::Error>> {
+fn create_add_module_to_config() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -185,8 +230,8 @@ fn create_add_module_to_config() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
@@ -199,12 +244,15 @@ fn create_add_module_to_config() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(config_split[0], "[general]");
     assert_eq!(config_split[1], "name = \"platformer_modules\"");
-    assert_eq!(config_split[2], "lib_path = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[3], "godot_path = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[4], "targets = [\"windows\"]");
-    assert_eq!(config_split[5], "modules = [\"Hello\"]");
+    assert_eq!(config_split[2], "targets = [\"windows\"]");
+    assert_eq!(config_split[3], "modules = [\"Hello\"]");
+    assert_eq!(config_split[4], "");
+    assert_eq!(config_split[5], "[paths]");
+    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[8], "output = \"\"");
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -213,7 +261,7 @@ fn create_add_module_to_config() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create a module and add it to the lib file.
 #[test]
-fn create_add_module_to_lib() -> Result<(), Box<dyn std::error::Error>> {
+fn create_add_module_to_lib() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -221,8 +269,8 @@ fn create_add_module_to_lib() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
@@ -249,7 +297,7 @@ fn create_add_module_to_lib() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(lib_file_split[10], "godot_nativescript_init!(init);");
     assert_eq!(lib_file_split[11], "godot_gdnative_terminate!();");
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -258,7 +306,7 @@ fn create_add_module_to_lib() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create a module and add create a module file for it.
 #[test]
-fn create_mod_file() -> Result<(), Box<dyn std::error::Error>> {
+fn create_mod_file() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -266,8 +314,8 @@ fn create_mod_file() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
@@ -301,7 +349,7 @@ fn create_mod_file() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(mod_file_split[14], "}");
     assert_eq!(mod_file_split[15], "");
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -310,7 +358,7 @@ fn create_mod_file() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create a with multiple capital letters in the name.
 #[test]
-fn create_multiple_captial_letters() -> Result<(), Box<dyn std::error::Error>> {
+fn create_multiple_captial_letters() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -318,8 +366,8 @@ fn create_multiple_captial_letters() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
@@ -339,7 +387,7 @@ fn create_multiple_captial_letters() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(mod_file_split[5], "impl MainScene {");
     assert_eq!(mod_file_split[7], "\t\tMainScene");
 
-    assert_eq!(config_split[5], "modules = [\"MainScene\"]");
+    assert_eq!(config_split[3], "modules = [\"MainScene\"]");
 
     assert_eq!(lib_file_split[3], "mod main_scene;");
     assert_eq!(
@@ -347,7 +395,7 @@ fn create_multiple_captial_letters() -> Result<(), Box<dyn std::error::Error>> {
         "\thandle.add_class::<main_scene::MainScene>();"
     );
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -356,7 +404,7 @@ fn create_multiple_captial_letters() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create multiple modules.
 #[test]
-fn create_multiple_modules() -> Result<(), Box<dyn std::error::Error>> {
+fn create_multiple_modules() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -364,15 +412,15 @@ fn create_multiple_modules() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
         .arg("Hello")
         .output()
         .expect("Unable to execute cargo run");
-    std::process::Command::new("cargo")
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
@@ -380,10 +428,9 @@ fn create_multiple_modules() -> Result<(), Box<dyn std::error::Error>> {
         .output()
         .expect("Unable to execute cargo run");
 
-    let hello_file_path = std::path::Path::new("src/hello.rs");
-    let world_file_path = std::path::Path::new("src/lib.rs");
-    let gdnlib_file_path =
-        std::path::Path::new("../platformer/rust-modules/platformer_modules.gdnlib");
+    let hello_file_path = Path::new("src/hello.rs");
+    let world_file_path = Path::new("src/lib.rs");
+    let gdnlib_file_path = Path::new("../platformer/platformer_modules.gdnlib");
 
     let config_file = read_to_string("godot-rust-helper.toml").expect("Unable to read config file");
     let config_split = config_file.split("\n").collect::<Vec<&str>>();
@@ -391,9 +438,9 @@ fn create_multiple_modules() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(hello_file_path.exists(), true);
     assert_eq!(world_file_path.exists(), true);
     assert_eq!(gdnlib_file_path.exists(), true);
-    assert_eq!(config_split[5], "modules = [\"Hello\", \"World\"]");
+    assert_eq!(config_split[3], "modules = [\"Hello\", \"World\"]");
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -402,7 +449,7 @@ fn create_multiple_modules() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create multiple modules and add them to the lib file.
 #[test]
-fn create_multiple_modules_and_add_to_lib() -> Result<(), Box<dyn std::error::Error>> {
+fn create_multiple_modules_and_add_to_lib() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -410,15 +457,15 @@ fn create_multiple_modules_and_add_to_lib() -> Result<(), Box<dyn std::error::Er
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
         .arg("Hello")
         .output()
         .expect("Unable to execute cargo run");
-    std::process::Command::new("cargo")
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
@@ -447,7 +494,7 @@ fn create_multiple_modules_and_add_to_lib() -> Result<(), Box<dyn std::error::Er
     assert_eq!(lib_file_split[12], "godot_nativescript_init!(init);");
     assert_eq!(lib_file_split[13], "godot_gdnative_terminate!();");
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -456,7 +503,7 @@ fn create_multiple_modules_and_add_to_lib() -> Result<(), Box<dyn std::error::Er
 
 // It should remove all traces of a created module.
 #[test]
-fn destroy_remove_created_module() -> Result<(), Box<dyn std::error::Error>> {
+fn destroy_remove_created_module() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -464,15 +511,15 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
         .arg("Hello")
         .output()
         .expect("Unable to execute cargo run");
-    std::process::Command::new("cargo")
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("destroy")
@@ -501,11 +548,11 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(lib_file_split[7], "godot_nativescript_init!(init);");
     assert_eq!(lib_file_split[8], "godot_gdnative_terminate!();");
 
-    assert_eq!(config_split[5], "modules = []");
+    assert_eq!(config_split[3], "modules = []");
 
     assert_eq!(mod_file_path.exists(), false);
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -514,7 +561,7 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create two modules and remove one.
 #[test]
-fn destory_create_two_remove_one() -> Result<(), Box<dyn std::error::Error>> {
+fn destory_create_two_remove_one() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -522,22 +569,22 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
         .arg("Hello")
         .output()
         .expect("Unable to execute cargo run");
-    std::process::Command::new("cargo")
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
         .arg("World")
         .output()
         .expect("Unable to execute cargo run");
-    std::process::Command::new("cargo")
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("destroy")
@@ -570,12 +617,12 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(lib_file_split[10], "godot_nativescript_init!(init);");
     assert_eq!(lib_file_split[11], "godot_gdnative_terminate!();");
 
-    assert_eq!(config_split[5], "modules = [\"Hello\"]");
+    assert_eq!(config_split[3], "modules = [\"Hello\"]");
 
     assert_eq!(hello_mod_file_path.exists(), true);
     assert_eq!(world_mod_file_path.exists(), false);
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -584,7 +631,7 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn std::error::Error>> {
 
 // It should create two modules and remove one.
 #[test]
-fn build_library() -> Result<(), Box<dyn std::error::Error>> {
+fn build_library() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -592,26 +639,66 @@ fn build_library() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    std::env::set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    std::process::Command::new("cargo")
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
         .arg("Hello")
         .output()
         .expect("Unable to execute cargo run");
-    std::process::Command::new("cargo")
+    Command::new("cargo")
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("build")
         .output()
         .expect("Unable to execute cargo run");
 
-    let dll_file_path = Path::new("../platformer/rust-modules/platformer_modules.dll");
+    let dll_file_path = Path::new("../platformer/platformer_modules.dll");
 
     assert_eq!(dll_file_path.exists(), true);
 
-    std::env::set_current_dir("../").expect("Unable to change to parent directory");
+    set_current_dir("../").expect("Unable to change to parent directory");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should place the build files in the correct specified output.
+#[test]
+fn build_specify_output_correct_dll_location() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output");
+
+    cmd.assert().success();
+
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
+        .arg("run")
+        .arg("--manifest-path=../../Cargo.toml")
+        .arg("create")
+        .arg("Hello")
+        .output()
+        .expect("Unable to execute cargo run");
+    Command::new("cargo")
+        .arg("run")
+        .arg("--manifest-path=../../Cargo.toml")
+        .arg("build")
+        .output()
+        .expect("Unable to execute cargo run");
+
+    let dll_file_path = Path::new("../platformer/godot-rust-helper-output/platformer_modules.dll");
+
+    assert_eq!(dll_file_path.exists(), true);
+
+    set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
 
@@ -624,12 +711,20 @@ fn ensure_correct_dir() {
     let current_dir_basename = current_dir.file_stem().unwrap();
 
     if current_dir_basename != "tests" {
-        std::env::set_current_dir("tests").expect("Unable to change to tests directory");
+        set_current_dir("tests").expect("Unable to change to tests directory");
     }
 }
 
-// Removes the platformer_modules and platformer/rust-modules folders.
+// Removes the platformer_modules folder and the gdnlib/dll files.
 fn cleanup_after_test() {
-    std::fs::remove_dir_all("platformer_modules").expect("Unable to remove dir");
-    std::fs::remove_dir_all("platformer/rust-modules").expect("Unable to remove dir");
+    remove_dir_all("platformer_modules").expect("Unable to remove dir");
+
+    if Path::new("platformer/platformer_modules.gdnlib").exists() {
+        remove_file("platformer/platformer_modules.gdnlib").expect("Unable to remove file");
+        if Path::new("platformer/platformer_modules.dll").exists() {
+            remove_file("platformer/platformer_modules.dll").expect("Unable to remove file");
+        }
+    } else if Path::new("platformer/godot-rust-helper-output").exists() {
+        remove_dir_all("platformer/godot-rust-helper-output").expect("Unable to remove dir")
+    }
 }

@@ -69,20 +69,31 @@ pub fn add_extensions_dep() -> String {
 /// command and used throughout the rest of the commands.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
+	/// General configuration options that can't be grouped in other ways (for now).
 	pub general: ConfigGeneral,
+	/// The locations of various important parts of the project.
+	pub paths: ConfigPaths,
 }
 
-// For now, everything will go under the [general] tag and the structure of it is defined below.
+/// General configuration options that can't be grouped in other ways (for now).
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigGeneral {
 	/// The name of the library.
 	pub name: String,
-	/// The path to the library.
-	pub lib_path: PathBuf,
-	// The path to the godot project.
-	pub godot_path: PathBuf,
 	/// The build targets.
 	pub targets: Vec<String>,
 	/// The modules that have been created.
 	pub modules: Vec<String>,
+}
+
+/// Contains the location of the scripts, the godot project, and the folder in the godot project that contains the
+/// gdnlib file and the build files.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigPaths {
+	/// The path to the library that contains the Rust scripts.
+	pub lib: PathBuf,
+	/// The path to the Godot project.
+	pub godot: PathBuf,
+	/// The path to the gdnlib file and build files in Godot.
+	pub output: PathBuf,
 }

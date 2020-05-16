@@ -1,3 +1,6 @@
+## 2.0.0 / 2020-05-16
+- [FEATURE] Output (gdnlib, build files) path can be specified using --output-path. This means that the rust-modules folder doesn't exist anymore and these files will be placed in the root directory by default.
+
 ## 1.1.0 / 2020-05-10
 - [FEATURE] Added rebase command that allows you to easily update the config of another cloned/downloaded godot_rust_helper project.
 - [MISC] Changed to using dunce for absolute path resolution.

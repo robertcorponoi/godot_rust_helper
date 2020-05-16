@@ -1,6 +1,8 @@
 use crate::utils;
 
+use path_slash::PathBufExt;
 use std::borrow::Cow;
+use std::path::PathBuf;
 
 /// Returns the initial contents of the src/lib.rs file.
 pub fn create_initial_lib_file() -> String {
@@ -67,7 +69,8 @@ godot_gdnative_terminate!();"#,
 ///
 /// `name` - The name of the module.
 pub fn create_mod_file(name: &str) -> String {
-    let init_string = format!(r#"fn _init(_owner: gdnative::Node) -> Self {{
+    let init_string = format!(
+        r#"fn _init(_owner: gdnative::Node) -> Self {{
 {}
 {}"#,
         format!("\t\t{}", name),
@@ -110,8 +113,9 @@ impl {} {{
 /// # Arguments
 ///
 /// `name` - The name of the library.
+/// `output_path` - The path where the compiled files are being output.
 /// `targets` - The build targets of the library.
-pub fn create_gdnlib_file(name: &str, targets: &[&str]) -> String {
+pub fn create_gdnlib_file(name: &str, output_path: &PathBuf, targets: &[&str]) -> String {
     let mut gdnlib_vec: Vec<Cow<str>> = vec![
         "[entry]".into(),
         "".into(),
@@ -131,24 +135,47 @@ pub fn create_gdnlib_file(name: &str, targets: &[&str]) -> String {
     let entry_insert_point = 2;
     let mut dep_insert_point = 6;
 
+    let output_path_str = output_path
+        .to_owned()
+        .into_os_string()
+        .into_string()
+        .expect("Unable to create string from output_path");
+
+    let mut o_path = PathBuf::from(output_path);
+
     for &t in targets {
         match t {
             "windows" => {
-                let file_name = format!("Windows.64=\"res://rust-modules/{}.dll\"", name).into();
+                let f_name = format!("{}.dll", name);
+                o_path.push(f_name);
+                //o_path.to_slash().expect("Unable to slash");
+
+                // output_path.to_owned().push(f_name);
+                // let f_str = o_path
+                //     .to_owned()
+                //     .into_os_string()
+                //     .into_string()
+                //     .expect("Blah");
+
+                let f_str = o_path.to_slash().unwrap();
+
+                let file_name = format!("Windows.64=\"res://{}\"", f_str).into();
                 let dep_entry = "Windows.64=[  ]".into();
 
                 gdnlib_vec.insert(entry_insert_point, file_name);
                 gdnlib_vec.insert(dep_insert_point, dep_entry);
             }
             "linux" => {
-                let file_name = format!("X11.64=\"res://rust-modules/lib{}.so\"", name).into();
+                let file_name =
+                    format!("X11.64=\"res://{}lib{}.so\"", output_path_str, name).into();
                 let dep_entry = "X11.64=[  ]".into();
 
                 gdnlib_vec.insert(entry_insert_point, file_name);
                 gdnlib_vec.insert(dep_insert_point, dep_entry);
             }
             "osx" => {
-                let file_name = format!("OSX.64=\"res://rust-modules/lib{}.dylib\"", name).into();
+                let file_name =
+                    format!("OSX.64=\"res://{}lib{}.dylib\"", output_path_str, name).into();
                 let dep_entry = "OSX.64=[  ]".into();
 
                 gdnlib_vec.insert(entry_insert_point, file_name);

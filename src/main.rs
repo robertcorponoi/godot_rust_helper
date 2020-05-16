@@ -5,6 +5,7 @@ mod configs;
 mod content;
 mod utils;
 
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -19,13 +20,17 @@ enum GodotRustHelper {
 		/// The name of the library that will contain your Rust modules. The name of the library is recommended to be the same name as your game, snake_case,
 		/// maybe with `_modules` at the end. Also keep in mind that the library is created using `cargo new`
 		#[structopt(parse(from_os_str))]
-		destination: std::path::PathBuf,
+		destination: PathBuf,
 		/// The directory that contains the project.godot file of the game that the modules are for.
 		#[structopt(parse(from_os_str))]
-		godot_project_dir: std::path::PathBuf,
+		godot_project_dir: PathBuf,
 		/// The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
 		#[structopt(long, short, default_value = "windows")]
 		targets: String,
+		// godot_rust_helper needs to output certain files to the Godot project directory such as a gdnlib and the compiled files.
+		// If you specify a directory for the output then the output files will go there, otherwise they will go in the root of the Godot project directory.
+		#[structopt(long, short, default_value = "")]
+		output_path: PathBuf,
 	},
 	/// Creates a new module inside of the library.
 	/// The name passed to this command should be the class name of the module. Class names must start with capital letters. Examples include 'Player', 'Princess', 'Mob', 'HUD', etc.
@@ -66,9 +71,9 @@ fn main() {
 			destination,
 			godot_project_dir,
 			targets,
-			// extensions,
+			output_path,
 		} => {
-			commands::create_library(destination, godot_project_dir, targets);
+			commands::create_library(destination, godot_project_dir, targets, output_path);
 		}
 		// When the `create` command is used we run the `commands::create_module` function to create a module inside of the library.
 		GodotRustHelper::Create { name } => {

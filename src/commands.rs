@@ -4,10 +4,11 @@ use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 use std::sync::mpsc::channel;
 
-use crate::configs::{Cargo, Config, ConfigGeneral};
+use crate::configs::{Cargo, Config, ConfigGeneral, ConfigPaths};
 use crate::content;
 use crate::utils;
 
+use pathdiff::diff_paths;
 use chrono::prelude::*;
 use colored::*;
 use notify::{op, raw_watcher, RawEvent, RecursiveMode, Watcher};
@@ -21,7 +22,12 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 /// `destination` - The destination directory for the library.
 /// `godot_project_dir` - The directory that contains the Godot project that the modules are for.
 /// `targets` - The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
-pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets: String) {
+pub fn create_library(
+    destination: PathBuf,
+    godot_project_dir: PathBuf,
+    targets: String,
+    output: PathBuf,
+) {
     println!("{}", "creating library".white());
 
     let dest_path = if !destination.is_absolute() {
@@ -32,7 +38,6 @@ pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets:
     } else {
         Path::new(&destination).to_path_buf()
     };
-
     let godot_path = if !godot_project_dir.is_absolute() {
         utils::absolute_path(godot_project_dir)
             .expect("Unable to create absolute path from destination path")
@@ -41,6 +46,19 @@ pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets:
     } else {
         Path::new(&godot_project_dir).to_path_buf()
     };
+    let output_as_path_buf = PathBuf::from(output);
+    let output_path = if output_as_path_buf == PathBuf::from("") {
+        PathBuf::from(&godot_path)
+    } else if !output_as_path_buf.is_absolute() {
+        utils::absolute_path(output_as_path_buf)
+            .expect("Unable to create absolute path from destination path")
+            .as_path()
+            .to_owned()
+    } else {
+        Path::new(&output_as_path_buf).to_path_buf()
+    };
+
+    let output_relative_path = diff_paths(&output_path, &godot_path).expect("Unable to get path diff");
 
     // Check to see if the library already exists.
     if dest_path.exists() {
@@ -83,8 +101,7 @@ pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets:
 
     // Add the correct tags and dependencies to the library's Cargo.toml.
     set_current_dir(&dest_basename).expect("Unable to change to library directory");
-    let cargo_toml_string =
-        read_to_string("Cargo.toml").expect("Unable to resdfsdfsdfsdfsdfad Cargo.toml");
+    let cargo_toml_string = read_to_string("Cargo.toml").expect("Unable to read Cargo.toml");
     let cargo_toml: Cargo = toml::from_str(&cargo_toml_string).expect("Unable to parse Cargo.toml");
 
     let cargo_toml_str = toml::to_string(&cargo_toml).expect("Unable to convert to toml to string");
@@ -115,15 +132,19 @@ pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets:
     }
 
     // Create the config and write it to a file.
+    let config_paths = ConfigPaths {
+        lib: dest_path.to_owned(),
+        godot: godot_path.to_owned(),
+        output: output_relative_path.to_owned(),
+    };
     let config_general = ConfigGeneral {
         name: dest_basename_string.to_string(),
-        lib_path: dest_path.to_owned(),
-        godot_path: godot_path.to_owned(),
-        targets: targets_split,
         modules: vec![],
+        targets: targets_split,
     };
     let config = Config {
         general: config_general,
+        paths: config_paths,
     };
 
     let config_string = toml::to_string(&config).expect("Unable to convert config to string");
@@ -145,8 +166,6 @@ pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets:
         }
     }
 
-    // Create the 'rust-modules' directory in the Godot project so that we don't clutter the root directory.
-    // let dir_to_change_to = current_dir().parent().parent();
     if !godot_path.is_absolute() {
         let current = current_dir().expect("Unable to get parent dir");
         let parent = current
@@ -158,8 +177,9 @@ pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets:
         set_current_dir(&grandparent).expect("Unable to change to grandparent dir");
     }
 
-    let godot_rust_modules_path = godot_path.join("rust-modules");
-    match std::fs::create_dir_all(godot_rust_modules_path) {
+    let output_full_path = &godot_path.join(output_path);
+
+    match std::fs::create_dir_all(&output_full_path) {
         Ok(_v) => (),
         Err(e) => {
             println!(
@@ -170,17 +190,16 @@ pub fn create_library(destination: PathBuf, godot_project_dir: PathBuf, targets:
         }
     }
 
-    // Create the gdnlib file for the library and save it to the rust-modules project directory.
     let targets_vec: Vec<String> = targets.split(",").map(|s| s.to_string()).collect();
     let targets_str: Vec<&str> = targets_vec.iter().map(AsRef::as_ref).collect();
 
-    let gdnlib = content::create_gdnlib_file(dest_basename_string, &targets_str);
+    let gdnlib = content::create_gdnlib_file(dest_basename_string, &output_relative_path, &targets_str);
     let gdnlib_file_name = format!("{}.gdnlib", dest_basename_string);
-    let gdnlib_path = godot_path.join("rust-modules").join(gdnlib_file_name);
 
-    std::fs::File::create(&gdnlib_path).expect("Unable to create gdnlib file");
+    std::fs::File::create(&output_full_path.join(&gdnlib_file_name))
+        .expect("Unable to create gdnlib file");
 
-    match write(gdnlib_path, gdnlib.replace("\\", "")) {
+    match write(output_full_path.join(gdnlib_file_name), gdnlib) {
         Ok(_v) => (),
         Err(e) => {
             println!("There was a problem creating the gdnlib file: {}", e);
@@ -354,11 +373,6 @@ pub fn build_library() {
         read_to_string(&config_path).expect("Unable to read godot-rust-helper.toml config file");
     let config: Config = toml::from_str(&config_string).expect("Unable to parse config");
 
-    // Run the `cargo build` command to generate the target files.
-    // std::process::Command::new("cargo")
-    //     .arg("build")
-    //     .output()
-    //     .expect("Unable to execute cargo build");
     let status = std::process::Command::new("cargo")
         .arg("build")
         .status()
@@ -388,7 +402,7 @@ pub fn build_library() {
 
         std::process::Command::new("cp")
             .arg(file_path)
-            .arg(&config.general.godot_path.join("rust-modules"))
+            .arg(&config.paths.godot.join(&config.paths.output))
             .output()
             .expect("Unable to copy build files");
 
@@ -465,8 +479,8 @@ pub fn rebase(godot_project_dir: PathBuf, targets: String) {
         .to_owned();
 
     // Update the paths in the config.
-    config.general.lib_path = lib_path;
-    config.general.godot_path = godot_path;
+    config.paths.lib = lib_path;
+    config.paths.godot = godot_path;
 
     // If new targets were set then we update it in the config and the gdnlib file.
     if !targets.is_empty() {
@@ -486,9 +500,9 @@ pub fn rebase(godot_project_dir: PathBuf, targets: String) {
     let targets_vec: Vec<String> = targets.split(",").map(|s| s.to_string()).collect();
     let targets_str: Vec<&str> = targets_vec.iter().map(AsRef::as_ref).collect();
 
-    let gdnlib = content::create_gdnlib_file(&config.general.name.to_owned(), &targets_str);
+    let gdnlib = content::create_gdnlib_file(&config.general.name.to_owned(), &config.paths.output, &targets_str);
     let gdnlib_file_name = format!("{}.gdnlib", &config.general.name.to_owned());
-    let gdnlib_path = config.general.godot_path.join("rust-modules").join(gdnlib_file_name);
+    let gdnlib_path = config.paths.output.join(gdnlib_file_name);
 
     match write(gdnlib_path, gdnlib.replace("\\", "")) {
         Ok(_v) => (),
