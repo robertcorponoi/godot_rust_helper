@@ -1,6 +1,6 @@
 [package]
 name = "godot_rust_helper"
-version = "2.0.0"
+version = "2.1.0"
 authors = ["Robert Corponoi <robertcorponoi@gmail.com>"]
 license = "MIT"
 description = "A simple CLI tool to help you create and update Rust modules for your Godot projects"
@@ -17,7 +17,6 @@ structopt = "0.3.13"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 regex = "1"
-path-clean = "0.1.0"
 colored = "1.9"
 notify = "4.0.12"
 chrono = "0.4"

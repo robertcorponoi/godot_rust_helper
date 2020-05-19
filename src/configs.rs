@@ -97,3 +97,18 @@ pub struct ConfigPaths {
 	/// The path to the gdnlib file and build files in Godot.
 	pub output: PathBuf,
 }
+
+/// The v1.x version of the godot-rust-helper.toml config file.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigV1 {
+	pub general: ConfigGeneralV1,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigGeneralV1 {
+	pub name: String,
+	pub lib_path: PathBuf,
+	pub godot_path: PathBuf,
+	pub targets: Vec<String>,
+	pub modules: Vec<String>,
+}

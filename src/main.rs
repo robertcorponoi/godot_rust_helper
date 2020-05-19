@@ -62,6 +62,12 @@ enum GodotRustHelper {
 		#[structopt(long, short, default_value = "")]
 		targets: String,
 	},
+	/// Update a library from using godot_rust_helper v1.x to v2.x.
+	Update {
+		/// As of godot_rust_helper 2.x the 'rust-modules' directory no longer exists and is customizable. You can change this to a different directory at this time but you'll have to fix all references in Godot.
+		#[structopt(long, short, default_value = "")]
+		output_path: PathBuf,
+	},
 }
 
 fn main() {
@@ -97,6 +103,10 @@ fn main() {
 			targets,
 		} => {
 			commands::rebase(godot_project_dir, targets);
+		}
+		// When the `update` command is used we run the `commands::update` function to update the project from using godot_rust_helper 1.x to godot_rust_helper 2.x.
+		GodotRustHelper::Update { output_path } => {
+			commands::update(output_path);
 		}
 	}
 }

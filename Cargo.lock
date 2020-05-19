@@ -176,14 +176,13 @@ checksum = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
 
 [[package]]
 name = "godot_rust_helper"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "assert_cmd",
  "chrono",
  "colored",
  "dunce",
  "notify",
- "path-clean",
  "path-slash",
  "pathdiff",
  "predicates",
@@ -385,12 +384,6 @@ checksum = "c62be47e61d1842b9170f0fdeec8eba98e60e90e5446449a0545e5152acd7096"
 dependencies = [
  "autocfg",
 ]
-
-[[package]]
-name = "path-clean"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecba01bf2678719532c5e3059e0b5f0811273d94b397088b82e3bd0a78c78fdd"
 
 [[package]]
 name = "path-slash"

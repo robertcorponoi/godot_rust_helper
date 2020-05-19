@@ -1,7 +1,5 @@
-extern crate path_clean;
 extern crate regex;
 
-use path_clean::PathClean;
 use std::env;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -68,19 +66,19 @@ where
         path.to_path_buf()
     } else {
         env::current_dir()?.join(path)
-    }
-    .clean();
+    };
 
     match dunce::canonicalize(&absolute_path) {
         Ok(v) => absolute_path = v,
         Err(_e) => {
-            let parent = &absolute_path.parent().expect("Unable to parse path");
-            let basename = &absolute_path.file_stem().expect("Unable to parse path");
-            let parent_canon = dunce::canonicalize(parent).expect("Unable to parse path");
+            let parent = &absolute_path.parent().expect("Unable to get the absolute path's parent");
+            let basename = &absolute_path.file_stem().expect("Unable to get the absolute path's basename");
+            let parent_canon = dunce::canonicalize(parent).expect("Unable to canonicalize parent directory");
 
             absolute_path = parent_canon.join(basename);
         }
     }
+
 
     Ok(absolute_path)
 }

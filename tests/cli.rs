@@ -53,8 +53,8 @@ fn new_has_correct_default_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[3], "modules = []");
     assert_eq!(config_split[4], "");
     assert_eq!(config_split[5], "[paths]");
-    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
     assert_eq!(config_split[8], "output = \"\"");
 
     cleanup_after_test();
@@ -164,8 +164,8 @@ fn new_has_correct_targets_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[3], "modules = []");
     assert_eq!(config_split[4], "");
     assert_eq!(config_split[5], "[paths]");
-    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
     assert_eq!(config_split[8], "output = \"\"");
 
     cleanup_after_test();
@@ -248,8 +248,8 @@ fn create_add_module_to_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[3], "modules = [\"Hello\"]");
     assert_eq!(config_split[4], "");
     assert_eq!(config_split[5], "[paths]");
-    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects3\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
     assert_eq!(config_split[8], "output = \"\"");
 
     set_current_dir("../").expect("Unable to change to parent directory");
@@ -668,6 +668,46 @@ fn build_library() -> Result<(), Box<dyn Error>> {
 // It should place the build files in the correct specified output.
 #[test]
 fn build_specify_output_correct_dll_location() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output");
+
+    cmd.assert().success();
+
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
+        .arg("run")
+        .arg("--manifest-path=../../Cargo.toml")
+        .arg("create")
+        .arg("Hello")
+        .output()
+        .expect("Unable to execute cargo run");
+    Command::new("cargo")
+        .arg("run")
+        .arg("--manifest-path=../../Cargo.toml")
+        .arg("build")
+        .output()
+        .expect("Unable to execute cargo run");
+
+    let dll_file_path = Path::new("../platformer/godot-rust-helper-output/platformer_modules.dll");
+
+    assert_eq!(dll_file_path.exists(), true);
+
+    set_current_dir("../").expect("Unable to change to parent directory");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should update a project from the 1.x to 2.x.
+#[test]
+fn update_from_1_to_2() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;

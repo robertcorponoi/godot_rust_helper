@@ -187,6 +187,34 @@ $ godot_rust_helper rebase ../path/to/game
 $ godot_rust_helper rebase ../path/to/game --targets=linux,osx
 ```
 
+### **update**
+
+Updates a project from using godot_rust_helper 1.x to godot_rust_helper 2.x.
+
+This command has to be used from inside the project you want to update.
+
+```bash
+$ godot_rust_helper update [output-path]
+```
+
+- **output-path** Since godot_rust_helper 2.x doesn't create a rust-modules folder you can specify this to change the location where the gdnlib and build files reside. If left blank, the rust-modules folder will be used by default.
+
+**examples:**
+
+Leaving the rust-modules folder:
+
+```bash
+$ godot_rust_helper update
+```
+
+Moving the output files to a new directory:
+
+```bash
+$ godot_rust_helper update --output-path /path/to/godot-project/gdr-output
+```
+
+**Note:** You will probably have to run another build and you will definitely have to reassign the scripts to the gdnlib file after updating.
+
 ## **Tests**
 
 ```bash

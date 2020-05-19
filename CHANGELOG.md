@@ -1,3 +1,6 @@
+## 2.1.0 / 2020-05-19
+- [FEATURE] Added update command to update projects from using godot_rust_helper 1.x to godot_rust_helper 2.x
+
 ## 2.0.0 / 2020-05-16
 - [FEATURE] Output (gdnlib, build files) path can be specified using --output-path. This means that the rust-modules folder doesn't exist anymore and these files will be placed in the root directory by default.
 
