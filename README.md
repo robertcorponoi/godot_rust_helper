@@ -18,7 +18,7 @@ To upgrade:
 $ cargo install --force godot_rust_helper
 ```
 
-Note: This documentation is for version 2.x. Documentation for versions 1.x can be found [here](https://github.com/robertcorponoi/godot_rust_helper/tree/v1.1.0).
+Note: This documentation is for version 3.x. Documentation for versions 2.x can be found [here](https://github.com/robertcorponoi/godot_rust_helper/tree/v2.1.0) and versions 1.x can be found [here](https://github.com/robertcorponoi/godot_rust_helper/tree/v1.1.0).
 
 ## **Step 1: Creating the Project's Library**
 
@@ -40,6 +40,7 @@ Let's go over the arguments and options in detail with some examples.
 **Options:**
 - `--targets` Native components in Godot can target multiple platforms and godot_rust_helper needs to know ahead of time what platforms you plan to target your components for with the available options currently being: windows, linux, and osx. For example if you are targeting Windows and OSX, you need to have have cargo set to build a dll and a dylib file and you would pass `--targets=windows,osx` as the targets. By default if no targets are passed then just `--targets=windows` will be set.
 -`--output-path` godot_rust_helper has to place a gdnlib file and the build files in the game's directory. By default these files are placed at the root of the game directory but you can specify a directory in the game (existing or not) where these files go instead using this option.
+-`--nativescript-path` The path in the Godot project where all of the nativescript files will be output. By default the nativescript files are placed at the root of the Godot project.
 
 **examples:**
 
@@ -61,6 +62,12 @@ Creating a library and having the files output to `build-output`:
 $ godot_rust_helper new breakout_components ~/Documents/projects/breakout --output-path ~/Documents/projects/breakout/build-output
 ```
 
+Creating a library and having the nativescript files output to `scripts`:
+
+```bash
+$ godot_rust_helper new breakout_components ~/Documents/projects/breakout --nativescript-path ~/Documents/projects/breakout/scripts
+```
+
 **Note:** The `src/lib.rs` file is completely managed by godot_rust_helper and should not be modified. Any modifications to the file will result in the components not functioning properly or they will be overwritten when a module is created/destroyed. Custom mods can be added to the file (coming soon).
 
 **Note:** Each instance of the library comes with `godot_rust_helper_extensions` as a dependency which is going to contain methods to make things easier (such as getting typed nodes) and include methods that are not a part of gdnative but are in gdscript. You do not have to use any extensions if you don't want to but if you are interested in them, check out the extensions [here](https://github.com/robertcorponoi/godot_rust_helper_ext).
@@ -79,7 +86,7 @@ $ godot_rust_helper create <class_name>
 
 - **name** The name passed to this command should be the class name of the component. Class names must start with capital letters. Examples include 'Player', 'Princess', 'Mob', 'HUD', etc.
 
-What this does is create a `src/<name>.rs` file for the component and adds an entry for it in the `src/lib.rs` file. If you attach this component as it is to a Node and run the game then "hello, world" will print to the godot console.
+What this does is create a `src/<name>.rs` file for the component and adds an entry for it in the `src/lib.rs` file. If you attach this component as it is to a Node and run the game then "hello, world" will print to the godot console. This also creates a `<name>.gdns` file at the location specified by `--nativescript-path` when you created the library. This is the script you attach to your Node in Godot.
 
 **Note:** This command has to be run from the library's directory.
 
@@ -125,20 +132,16 @@ $ godot_rust_helper build --watch
 
 ## **Step 4: Using the Components in Godot**
 
-The last step that has to be done to use your component in your Godot project is creating the component and attaching it to the node that needs to use it.
+The last step is to attach the scripts to the Nodes in Godot:
 
-After you have created a component and run a build, you can attach the component to a node like so:
-
-1. Choose the node to add the component to and in the inspector go to the script dropdown and choose to add a new script.
-2. In the Attach Node Script modal, set the following options:
-  - **Language:** NativeScript
-  - **Class Name:** The name you passed to `godot_rust_helper create` which is the class name of the Rust component you created.
-3. Change the name of the script to match the class name.
-4. Click on the newly created .gdns file (or after the steps above it should be active in the inspector already) and in the Library dropdown choose load and select the "library_name.gdnlib" file in the root folder (or the folder you specified with --output-path). This library name is the same name passed to `godot_rust_helper new`.
+1. Choose the node to add the component to and in the inspector go to the script dropdown and choose load.
+2. Find the script to load in the root directory or the directory specified by `--nativescript-path` when the library was created and select it.
 
 Now if you run your game you will see your component's functionality up and running!
 
 **Note:** If you update your Rust component and run a build you do not have to update the corresponding .gdnlib file in Godot, it will be updated automatically.
+
+**Note:** You do not need to keep your .gdns scripts in any certain place so feel free to move them around. As long as the gdnlib and dynamic library files are not moved then the nativescript files can be placed anywhere in the Godot project.
 
 ## **Other Commands**
 
@@ -146,7 +149,7 @@ The following are commands are situational but are not needed for the basic setu
 
 ### **destroy**
 
-Removes a Rust component from the library. You will still need to remove the component reference from your node in Godot as it will throw an error if you attempt to run the game since the component no longer exists.
+Removes a Rust component from the library.
 
 ```bash
 $ godot_rust_helper destroy <class_name>
@@ -189,7 +192,7 @@ $ godot_rust_helper rebase ../path/to/game --targets=linux,osx
 
 ### **update**
 
-Updates a project from using godot_rust_helper 1.x to godot_rust_helper 2.x.
+Updates a project from using godot_rust_helper 1.x or 2.x to godot_rust_helper 3.x.
 
 This command has to be used from inside the project you want to update.
 
@@ -198,6 +201,7 @@ $ godot_rust_helper update [output-path]
 ```
 
 - **output-path** Since godot_rust_helper 2.x doesn't create a rust-modules folder you can specify this to change the location where the gdnlib and build files reside. If left blank, the rust-modules folder will be used by default.
+- **nativescript-path** Since godot_rust_helper 3.x you can specify the directory where your nativescript files are output.
 
 **examples:**
 

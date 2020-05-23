@@ -27,10 +27,13 @@ enum GodotRustHelper {
 		/// The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
 		#[structopt(long, short, default_value = "windows")]
 		targets: String,
-		// godot_rust_helper needs to output certain files to the Godot project directory such as a gdnlib and the compiled files.
-		// If you specify a directory for the output then the output files will go there, otherwise they will go in the root of the Godot project directory.
+		/// godot_rust_helper needs to output certain files to the Godot project directory such as a gdnlib and the compiled files. 
+		/// If you specify a directory for the output then the output files will go there, otherwise they will go in the root of the Godot project directory.
 		#[structopt(long, short, default_value = "")]
 		output_path: PathBuf,
+		/// The directory in the Godot project where the .gdns scripts should be output to.
+		#[structopt(long, short, default_value = "")]
+		nativescript_path: PathBuf,
 	},
 	/// Creates a new module inside of the library.
 	/// The name passed to this command should be the class name of the module. Class names must start with capital letters. Examples include 'Player', 'Princess', 'Mob', 'HUD', etc.
@@ -62,11 +65,14 @@ enum GodotRustHelper {
 		#[structopt(long, short, default_value = "")]
 		targets: String,
 	},
-	/// Update a library from using godot_rust_helper v1.x to v2.x.
+	/// Update a library from using godot_rust_helper v1.x to v2.x or v2.x to v3.x.
 	Update {
 		/// As of godot_rust_helper 2.x the 'rust-modules' directory no longer exists and is customizable. You can change this to a different directory at this time but you'll have to fix all references in Godot.
 		#[structopt(long, short, default_value = "")]
 		output_path: PathBuf,
+		/// As of godot_rust_helper 3.x the nativescript files can be placed into a custom directory within the Godot project.
+		#[structopt(long, short, default_value = "")]
+		nativescript_path: PathBuf,
 	},
 }
 
@@ -78,8 +84,9 @@ fn main() {
 			godot_project_dir,
 			targets,
 			output_path,
+			nativescript_path,
 		} => {
-			commands::create_library(destination, godot_project_dir, targets, output_path);
+			commands::create_library(destination, godot_project_dir, targets, output_path, nativescript_path);
 		}
 		// When the `create` command is used we run the `commands::create_module` function to create a module inside of the library.
 		GodotRustHelper::Create { name } => {
@@ -105,8 +112,8 @@ fn main() {
 			commands::rebase(godot_project_dir, targets);
 		}
 		// When the `update` command is used we run the `commands::update` function to update the project from using godot_rust_helper 1.x to godot_rust_helper 2.x.
-		GodotRustHelper::Update { output_path } => {
-			commands::update(output_path);
+		GodotRustHelper::Update { output_path, nativescript_path } => {
+			commands::update(output_path, nativescript_path);
 		}
 	}
 }

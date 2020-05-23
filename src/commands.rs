@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 use std::sync::mpsc::channel;
 
-use crate::configs::{Cargo, Config, ConfigGeneral, ConfigPaths, ConfigV1};
+use crate::configs::{
+    Cargo, Config, ConfigGeneral, ConfigPaths, ConfigPathsV2, ConfigV1, ConfigV2,
+};
 use crate::content;
 use crate::utils;
 
@@ -15,7 +17,7 @@ use pathdiff::diff_paths;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-/// Creates the library that will contain your Rust modules.
+/// Runs `cargo new --lib` to create the library that will contain your Rust components.
 ///
 /// # Arguments
 ///
@@ -23,15 +25,17 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 /// `godot_project_dir` - The directory that contains the Godot project that the modules are for.
 /// `targets` - The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
 /// `output` - A directory within the godot project to place the gdnlib and build files.
+/// `nativescript_path` - A directory within the godot project to place the nativescript files.
 pub fn create_library(
     destination: PathBuf,
     godot_project_dir: PathBuf,
     targets: String,
     output: PathBuf,
+    nativescript_path: PathBuf,
 ) {
     println!("{}", "creating library".white());
 
-    // Make an absolute path out of the provided destination, godot, and output paths if they are not already.
+    // Make the destination directory an absolute path if it is not already one.
     let dest_path = if !destination.is_absolute() {
         utils::absolute_path(destination)
             .expect("Unable to create absolute path from destination path")
@@ -40,6 +44,8 @@ pub fn create_library(
     } else {
         Path::new(&destination).to_path_buf()
     };
+
+    // Make the godot directory an absolute path if it is not already one.
     let godot_path = if !godot_project_dir.is_absolute() {
         utils::absolute_path(godot_project_dir)
             .expect("Unable to create absolute path from destination path")
@@ -48,6 +54,8 @@ pub fn create_library(
     } else {
         Path::new(&godot_project_dir).to_path_buf()
     };
+
+    // Make the output path an absolute path if it is not already one.
     let output_as_path_buf = PathBuf::from(output);
     let output_path = if output_as_path_buf == PathBuf::from("") {
         PathBuf::from(&godot_path)
@@ -60,25 +68,39 @@ pub fn create_library(
         Path::new(&output_as_path_buf).to_path_buf()
     };
 
-    // We don't need the full path to the output folder since it's relative to the godot path.
-    let output_relative_path =
-        diff_paths(&output_path, &godot_path).expect("Unable to get path diff");
+    // Make the nativescript path an absolute path if it is not already one.
+    let ns_path_as_path_buf = PathBuf::from(nativescript_path);
+    let ns_path = if ns_path_as_path_buf == PathBuf::from("") {
+        PathBuf::from(&godot_path)
+    } else if !ns_path_as_path_buf.is_absolute() {
+        utils::absolute_path(ns_path_as_path_buf)
+            .expect("Unable to create absolute path from destination path")
+            .as_path()
+            .to_owned()
+    } else {
+        Path::new(&ns_path_as_path_buf).to_path_buf()
+    };
 
-    // Check to see if the library already exists.
+    // We don't need the full path to the output and nativescript directories since they're relative to the godot path.
+    // let output_relative_path =
+    //     diff_paths(&output_path, &godot_path).expect("Unable to get output path diff");
+    // let ns_relative_path =
+    //     diff_paths(&ns_path, &godot_path).expect("Unable to get nativescript path diff");
+
+    // Check to see if the destination directory already exists, we don't want to overwrite an existing project.
     if dest_path.exists() {
         println!("A library with the specified destination already exists, please choose another destination for the library.");
         exit(1);
     }
 
-    // Check to see if the path to Godot project is valid.
-    // In order for it to be considered valid, it needs to have a project.godot file.
+    // Check to make sure that the provided path to the Godot project is valid, i.e. it has a project.godot file at its root.
     let godot_project_path = godot_path.join("project.godot");
     if !godot_project_path.exists() {
         println!("The godot project dir provided is not valid.");
         exit(1);
     }
 
-    // Run the `cargo new` command in the destination directory to create the library.
+    // Run the `cargo new --lib` command in the destination directory to create the library.
     let dest_parent = dest_path
         .parent()
         .expect("Unable to get destination parent");
@@ -103,11 +125,10 @@ pub fn create_library(
         }
     }
 
-    // Add the correct tags and dependencies to the library's Cargo.toml.
+    // Set up the Cargo.toml file of the library to have the required tags and dependencies.
     set_current_dir(&dest_basename).expect("Unable to change to library directory");
     let cargo_toml_string = read_to_string("Cargo.toml").expect("Unable to read Cargo.toml");
     let cargo_toml: Cargo = toml::from_str(&cargo_toml_string).expect("Unable to parse Cargo.toml");
-
     let cargo_toml_str = toml::to_string(&cargo_toml).expect("Unable to convert to toml to string");
 
     match write(
@@ -124,10 +145,9 @@ pub fn create_library(
         }
     }
 
-    // Check to see if the targets are valid.
+    // Make sure the targets provided are in the list of accepted targets.
     let valid_targets = &["windows", "linux", "osx"];
     let targets_split = targets.split(",").map(|s| s.to_string()).collect();
-
     for t in &targets_split {
         if !valid_targets.iter().any(|&i| i == t) {
             println!("An invalid target was specified: {}", t);
@@ -135,11 +155,12 @@ pub fn create_library(
         }
     }
 
-    // Create the config and write it to a file.
+    // Create the config and write it to a godot-rust-helper.toml file.
     let config_paths = ConfigPaths {
         lib: dest_path.to_owned(),
         godot: godot_path.to_owned(),
-        output: output_relative_path.to_owned(),
+        output: output_path.to_owned(),
+        nativescript: ns_path.to_owned(),
     };
     let config_general = ConfigGeneral {
         name: dest_basename_string.to_string(),
@@ -150,7 +171,6 @@ pub fn create_library(
         general: config_general,
         paths: config_paths,
     };
-
     let config_string = toml::to_string(&config).expect("Unable to convert config to string");
 
     match write("godot-rust-helper.toml", config_string) {
@@ -161,7 +181,7 @@ pub fn create_library(
         }
     }
 
-    // Create the initial src/lib.rs file for the library.
+    // Create the initial src/lib.rs file for the library that will contain all of the created modules.
     match write("src/lib.rs", content::create_initial_lib_file()) {
         Ok(_v) => (),
         Err(e) => {
@@ -170,41 +190,46 @@ pub fn create_library(
         }
     }
 
-    if !godot_path.is_absolute() {
-        let current = current_dir().expect("Unable to get parent dir");
-        let parent = current
-            .as_path()
-            .parent()
-            .expect("Unable to get parent dir");
-        let grandparent = parent.parent().expect("Unable to get grandparent dir");
-
-        set_current_dir(&grandparent).expect("Unable to change to grandparent dir");
-    }
-
-    let output_full_path = &godot_path.join(output_path);
-
-    match std::fs::create_dir_all(&output_full_path) {
+    // Create the directory structure specified by --output-path.
+    match std::fs::create_dir_all(&config.paths.output) {
         Ok(_v) => (),
         Err(e) => {
             println!(
-                "There was a problem creating the the rust modules folder: {}",
+                "There was a problem creating the the output directory structure: {}",
                 e
             );
             exit(1);
         }
     }
 
+    // Create the directory structure specified by --nativescript-path.
+    match std::fs::create_dir_all(&config.paths.nativescript) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!(
+                "There was a problem creating the the nativescript directory structure: {}",
+                e
+            );
+            exit(1);
+        }
+    }
+
+    // Format the targets so that we can use them to create the gndlib file.
     let targets_vec: Vec<String> = targets.split(",").map(|s| s.to_string()).collect();
     let targets_str: Vec<&str> = targets_vec.iter().map(AsRef::as_ref).collect();
 
-    let gdnlib =
-        content::create_gdnlib_file(dest_basename_string, &output_relative_path, &targets_str);
+    // Create the contents of the gdnlib file and write it to the output directory.
+    let gdnlib = content::create_gdnlib_file(
+        dest_basename_string,
+        &diff_paths(&output_path, &godot_path).expect("Unable to get output path diff"),
+        &targets_str,
+    );
     let gdnlib_file_name = format!("{}.gdnlib", dest_basename_string);
 
-    std::fs::File::create(&output_full_path.join(&gdnlib_file_name))
+    std::fs::File::create(&config.paths.output.join(&gdnlib_file_name))
         .expect("Unable to create gdnlib file");
 
-    match write(output_full_path.join(gdnlib_file_name), gdnlib) {
+    match write(config.paths.output.join(gdnlib_file_name), gdnlib) {
         Ok(_v) => (),
         Err(e) => {
             println!("There was a problem creating the gdnlib file: {}", e);
@@ -223,8 +248,7 @@ pub fn create_library(
 pub fn create_module(name: &str) {
     println!("{}", "creating module".white());
 
-    // Check to see if we are in the directory of a library created with the `new` command.
-    // This is done by checking to see if there is a godot-rust-helper.toml configuration file present in the current directory.
+    // Check to make sure we are in a godot_rust_helper project by checking for the presence of a godot-rust-helper.toml file.
     let current_dir_path = std::env::current_dir().expect("Unable to get current directory");
     let config_path = Path::new(&current_dir_path).join("godot-rust-helper.toml");
     if !config_path.exists() {
@@ -282,7 +306,27 @@ pub fn create_module(name: &str) {
     match write(mod_file_path, mod_file) {
         Ok(_v) => (),
         Err(e) => {
-            println!("There was a problem creating the module: {}", e);
+            println!("There was a problem creating the mod file: {}", e);
+            exit(1);
+        }
+    }
+
+    // Create the gdns file.
+    let gdns_file_contents = content::create_gdns_file(
+        &config.general.name,
+        &name,
+        &diff_paths(&config.paths.output, &config.paths.godot)
+            .expect("Unable to get output path diff"),
+    );
+    let gdns_file_name = format!("{}.gdns", name);
+    let gdns_file_path = &config.paths.nativescript.join(gdns_file_name);
+
+    std::fs::File::create(&gdns_file_path).expect("Unable to create gdns file");
+
+    match write(gdns_file_path, gdns_file_contents) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("There was a problem creating the gdns file: {}", e);
             exit(1);
         }
     }
@@ -298,8 +342,7 @@ pub fn create_module(name: &str) {
 pub fn destroy_module(name: &str) {
     println!("{}", "destroying module".white());
 
-    // Check to see if we are in the directory of a library created with the `new` command.
-    // This is done by checking to see if there is a godot-rust-helper.toml configuration file present in the current directory.
+    // Check to see if we are in the directory of a library created with the `new` command by checking for the presence of a godot-rust-helper.toml file.
     let current_dir_path = std::env::current_dir().expect("Unable to get current directory");
     let config_path = Path::new(&current_dir_path).join("godot-rust-helper.toml");
     if !config_path.exists() {
@@ -356,6 +399,13 @@ pub fn destroy_module(name: &str) {
             exit(1);
         }
     }
+
+    // Remove the corresponding .gdns file from the Godot project directory.
+    let gdns_file_name = format!("{}.gdns", name);
+    Command::new("rm")
+        .arg(&config.paths.nativescript.join(gdns_file_name))
+        .status()
+        .expect("Unable to remove the corresponding gdns file from the Godot project.");
 
     println!("{}", "module destroyed".green());
 }
@@ -534,16 +584,16 @@ pub fn rebase(godot_project_dir: PathBuf, targets: String) {
     println!("{}", "library rebased".green());
 }
 
-/// Updates a library from using godot_rust_helper 1.x to using godot_rust_helper 2.x.
+/// Updates a library from an older version of godot_rust_helper to the newest version.
 ///
 /// # Arguments
 ///
 /// `output` - As of godot_rust_helper 2.x the 'rust-modules' directory no longer exists and is customizable. You can change this to a different directory at this time but you'll have to fix all references in Godot.
-pub fn update(output: PathBuf) {
+/// `nativescript_path` - As of godot_rust_helper 3.x the nativescript files can be placed into a custom directory within the Godot project.
+pub fn update(output: PathBuf, nativescript_path: PathBuf) {
     println!("{}", "Updating project from v1.x to v2.x...".white());
 
-    // Check to see if we are in a library created by godot_rust_helper and at the same time we
-    // get a reference to the config file so we can update it.
+    // Check to see if we are in a library created by the `new` command.
     let current_dir_path = current_dir().expect("Unable to get current directory");
     let config_path = current_dir_path.join("godot-rust-helper.toml");
     if !config_path.exists() {
@@ -553,97 +603,201 @@ pub fn update(output: PathBuf) {
         exit(1);
     }
 
-    // Read and parse the old config.
-    let config_string =
+    // Read and parse the old config file.
+    let mut config_string =
         read_to_string(&config_path).expect("Unable to read godot-rust-helper.toml config file");
-    let old_config: ConfigV1 =
-        toml::from_str(&config_string).expect("Unable to parse godot-rust-helper config");
-    // Create the new config with values from the old config.
-    let new_config_paths = ConfigPaths {
-        lib: utils::absolute_path(old_config.general.lib_path)
-            .expect("Unable to create absolute path from old lib path"),
-        godot: utils::absolute_path(old_config.general.godot_path)
-            .expect("Unable to create absolute path from old godot path"),
-        output: PathBuf::new(),
-    };
-    let new_config_general = ConfigGeneral {
-        name: old_config.general.name,
-        targets: old_config.general.targets,
-        modules: old_config.general.modules,
-    };
-    let mut new_config = Config {
-        general: new_config_general,
-        paths: new_config_paths,
-    };
-    // Check to see if the user would like to get rid of the
-    let output_as_path_buf = PathBuf::from(output);
-    let output_path = if output_as_path_buf == PathBuf::from("") {
-        PathBuf::from(&new_config.paths.godot.join("rust-modules"))
-    } else if !output_as_path_buf.is_absolute() {
-        utils::absolute_path(output_as_path_buf)
-            .expect("Unable to create absolute path from destination path")
-            .as_path()
-            .to_owned()
-    } else {
-        Path::new(&output_as_path_buf).to_path_buf()
-    };
 
-    let output_relative_path =
-        diff_paths(&output_path, &new_config.paths.godot).expect("Unable to get path diff");
-    new_config.paths.output = output_relative_path;
+    // Check to see what version the current project is using by looking for key differences in the config file.
+    // If the config file doesn't have the newer config format with a [paths] section, then it is v1.x. If the config file doesn't have a nativescript_path entry, then it is v2.x.
+    // If the config file has the [paths] section but doesn't have the nativescript entry under it, then the project is v2.x.
+    if !config_string.contains("[paths]") {
+        // Parse the current configuration of the project of the project as configuration v1.
+        let current_config: ConfigV1 = toml::from_str(&config_string).expect(
+            "Unable to parse godot-rust-helper config file of project using godot_rust_helper v1.x",
+        );
 
-    // Update the rust-modules folder to the new output folder if necessary.
-    Command::new("mv")
-        .arg(&new_config.paths.godot.join("rust-modules"))
-        .arg(&new_config.paths.godot.join(&new_config.paths.output))
-        .output()
-        .expect("Unable to move output folder");
+        // Create an instance of the new configuration of the project using the values from the current config.
+        // Since absolute paths were not a thing until godot_rust_helper v2 we also have to create absolute paths from the old paths.
+        let new_config_paths = ConfigPathsV2 {
+            lib: utils::absolute_path(current_config.general.lib_path)
+                .expect("Unable to create absolute path from godot_rust_helper v1.x lib path"),
+            godot: utils::absolute_path(current_config.general.godot_path).expect(
+                "Unable to create absolute path from from godot_rust_helper v1.x godot path",
+            ),
+            output: PathBuf::new(),
+        };
+        let new_config_general = ConfigGeneral {
+            name: current_config.general.name,
+            targets: current_config.general.targets,
+            modules: current_config.general.modules,
+        };
+        let mut new_config = ConfigV2 {
+            general: new_config_general,
+            paths: new_config_paths,
+        };
 
-    // Change the path value in the gdnlib file.
-    let targets_str: Vec<&str> = new_config.general.targets.iter().map(AsRef::as_ref).collect();
-    let gdnlib =
-        content::create_gdnlib_file(&new_config.general.name, &new_config.paths.output, &targets_str);
-    let gdnlib_file_name = format!("{}.gdnlib", &new_config.general.name);
+        // Check to see if the user would like to get rid of the rust-modules folder and instead use another directory within the Godot project.
+        let output_as_path_buf = PathBuf::from(output);
+        let output_path = if output_as_path_buf == PathBuf::from("") {
+            PathBuf::from(&new_config.paths.godot.join("rust-modules"))
+        } else if !output_as_path_buf.is_absolute() {
+            utils::absolute_path(output_as_path_buf)
+                .expect("Unable to create absolute path from destination path")
+                .as_path()
+                .to_owned()
+        } else {
+            Path::new(&output_as_path_buf).to_path_buf()
+        };
+        new_config.paths.output = output_path;
 
-    let gdnlib_path = &new_config.paths.godot.join(&new_config.paths.output);
-    std::fs::File::create(&gdnlib_path.join(&gdnlib_file_name))
-        .expect("Unable to create gdnlib file");
+        // Update the 'rust-modules' folder to the new output folder.
+        Command::new("mv")
+            .arg(&new_config.paths.godot.join("rust-modules"))
+            .arg(&new_config.paths.godot.join(&new_config.paths.output))
+            .output()
+            .expect("Unable to move output to the new directory");
 
-    match write(&new_config.paths.godot.join(&new_config.paths.output).join(gdnlib_file_name), gdnlib) {
-        Ok(_v) => (),
-        Err(e) => {
-            println!("There was a problem creating the gdnlib file: {}", e);
-            exit(1);
+        // Change the path to the dynamic libraries in the gdnlib file.
+        let targets_str: Vec<&str> = new_config
+            .general
+            .targets
+            .iter()
+            .map(AsRef::as_ref)
+            .collect();
+        let gdnlib = content::create_gdnlib_file(
+            &new_config.general.name,
+            &diff_paths(&new_config.paths.output, &new_config.paths.godot)
+                .expect("Unable to get path diff"),
+            &targets_str,
+        );
+
+        // Finally create the new gndlib file and write to it.
+        let gdnlib_file_name = format!("{}.gdnlib", &new_config.general.name);
+
+        let gdnlib_path = &new_config.paths.output;
+        std::fs::File::create(&gdnlib_path.join(&gdnlib_file_name))
+            .expect("Unable to create gdnlib file");
+
+        match write(&new_config.paths.output.join(gdnlib_file_name), gdnlib) {
+            Ok(_v) => (),
+            Err(e) => {
+                println!("There was a problem creating the gdnlib file: {}", e);
+                exit(1);
+            }
         }
-    }
 
-    // Finally write the new config to the same location as the old config.
-    let new_config_string =
-        toml::to_string(&new_config).expect("Unable to convert new config to string");
-    match write(config_path, new_config_string) {
-        Ok(_v) => (),
-        Err(e) => {
-            println!(
-                "{}: {}",
-                "There was a problem writing to the config file".red(),
-                e
-            );
-            exit(1);
-        }
-    }
-
-    // Next, we check to see if the Cargo.toml of the library contains a reference to the old extensions path.
-    let mut cargo_string = read_to_string("Cargo.toml").expect("Unable to read Cargo.toml");
-    if cargo_string.contains("godot_rust_helper_extensions") {
-        cargo_string =
-            cargo_string.replace("godot_rust_helper_extensions", "godot_rust_helper_ext");
-
-        match write("Cargo.toml", cargo_string) {
+        // We're done with the config for now so we can write it over the original.
+        let new_config_string =
+            toml::to_string(&new_config).expect("Unable to convert v2.x config to string");
+        match write(&config_path, new_config_string) {
             Ok(_v) => (),
             Err(e) => {
                 println!(
                     "{}: {}",
-                    "There was a problem writing to the Cargo.toml file".red(),
+                    "There was a problem writing to the v2.x config file".red(),
+                    e
+                );
+                exit(1);
+            }
+        }
+
+        // At some point godot_rust_helper_extensions was changed to godot_rust_helper_ext so we gotta change any reference to it in the Cargo.toml file.
+        let mut cargo_string = read_to_string("Cargo.toml").expect("Unable to read Cargo.toml");
+        if cargo_string.contains("godot_rust_helper_extensions") {
+            cargo_string =
+                cargo_string.replace("godot_rust_helper_extensions", "godot_rust_helper_ext");
+
+            match write("Cargo.toml", cargo_string) {
+                Ok(_v) => (),
+                Err(e) => {
+                    println!(
+                        "{}: {}",
+                        "There was a problem writing to the v2.x Cargo.toml file".red(),
+                        e
+                    );
+                    exit(1);
+                }
+            }
+        }
+
+        // Now we gotta go through each of the components created and check to see if they are still using `use godot_rust_helper_extensions` and change it to ext just like above.
+        for module in new_config.general.modules {
+            let module_filename = format!("{}.rs", utils::format_str(module));
+            let mut module_path = PathBuf::from("src");
+            module_path.push(module_filename);
+
+            let mut module_string = read_to_string(&module_path).expect("Unable to read module");
+            // If the module has the old extensions, then update it to the new ones.
+            if module_string.contains("godot_rust_helper_extensions") {
+                module_string =
+                    module_string.replace("godot_rust_helper_extensions", "godot_rust_helper_ext");
+
+                match write(&module_path, module_string) {
+                    Ok(_v) => (),
+                    Err(e) => {
+                        println!(
+                            "{}: {}",
+                            "there was a problem writing to the module file".red(),
+                            e
+                        );
+                        exit(1);
+                    }
+                }
+            }
+        }
+    }
+    if !config_string.contains("nativescript") {
+        config_string = read_to_string(&config_path)
+            .expect("Unable to read godot-rust-helper.toml config file");
+        // Parse the current configuration of the project as configuration v2.
+        let current_config: ConfigV2 = toml::from_str(&config_string).expect(
+            "Unable to parse godot-rust-helper config file of project using godot_rust_helper v2.x",
+        );
+
+        // Create an instance of the new configuration of the project using the values from the current config.
+        let new_config_paths = ConfigPaths {
+            lib: current_config.paths.lib,
+            godot: current_config.paths.godot.to_owned(),
+            output: utils::absolute_path(current_config.paths.output).expect(
+                "Unable to create absolute path from from godot_rust_helper v2.x output path",
+            ),
+            nativescript: current_config.paths.godot.to_owned(),
+        };
+        let new_config_general = ConfigGeneral {
+            name: current_config.general.name,
+            targets: current_config.general.targets,
+            modules: current_config.general.modules,
+        };
+        let mut new_config = Config {
+            general: new_config_general,
+            paths: new_config_paths,
+        };
+
+        // Check to see if the user would like to place the nativescript files in a specific directory.
+        // If no path is provided for the nativescript directory then the files will be placed in the root of the project.
+        let ns_path_as_path_buf = PathBuf::from(nativescript_path);
+        let ns_path = if ns_path_as_path_buf == PathBuf::from("") {
+            PathBuf::from(&new_config.paths.godot)
+        } else if !ns_path_as_path_buf.is_absolute() {
+            utils::absolute_path(ns_path_as_path_buf)
+                .expect("Unable to create absolute path from nativescript path")
+                .as_path()
+                .to_owned()
+        } else {
+            Path::new(&ns_path_as_path_buf).to_path_buf()
+        };
+        new_config.paths.nativescript = ns_path;
+
+        // We're done making changes to the config so we can write over the original now.
+        // We're done with the config for now so we can write it over the original.
+        let new_config_string =
+            toml::to_string(&new_config).expect("Unable to convert v3.x config to string");
+        match write(config_path, new_config_string) {
+            Ok(_v) => (),
+            Err(e) => {
+                println!(
+                    "{}: {}",
+                    "There was a problem writing to the v3.x config file".red(),
                     e
                 );
                 exit(1);
@@ -651,37 +805,10 @@ pub fn update(output: PathBuf) {
         }
     }
 
-    // Next, go through each of the modules created and see if there are any that are using the old extensions.
-    for module in new_config.general.modules {
-        let module_filename = format!("{}.rs", utils::format_str(module));
-        let mut module_path = PathBuf::from("src");
-        module_path.push(module_filename);
-
-        let mut module_string = read_to_string(&module_path).expect("Unable to read module");
-        // If the module has the old extensions, then update it to the new ones.
-        if module_string.contains("godot_rust_helper_extensions") {
-            module_string =
-                module_string.replace("godot_rust_helper_extensions", "godot_rust_helper_ext");
-
-            match write(&module_path, module_string) {
-                Ok(_v) => (),
-                Err(e) => {
-                    println!(
-                        "{}: {}",
-                        "there was a problem writing to the module file".red(),
-                        e
-                    );
-                    exit(1);
-                }
-            }
-        }
-    }
-
     println!("{}", "Update finished".green());
 }
 
-/// Runs the build command and logs the time.
-/// This is used by the `watch_library` method to run the build and show the timestamp of when the build was last run.
+/// Runs the build command and logs some info used by `watch_library` to show the version of godot_rust_helper and the timestamp of when the last build was run.
 fn build_with_time_log() {
     let dt: DateTime<Local> = Local::now();
     let dt_formatted = dt.format("%Y-%m-%d %H:%M:%S").to_string();

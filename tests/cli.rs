@@ -48,6 +48,8 @@ fn new_has_correct_default_config() -> Result<(), Box<dyn Error>> {
         read_to_string("platformer_modules/godot-rust-helper.toml").expect("Unable to read config");
     let config_split = config.split("\n").collect::<Vec<&str>>();
 
+    let gdnlib_path = Path::new("platformer/platformer_modules.gdnlib");
+
     assert_eq!(config_split[1], "name = \"platformer_modules\"");
     assert_eq!(config_split[2], "targets = [\"windows\"]");
     assert_eq!(config_split[3], "modules = []");
@@ -55,7 +57,10 @@ fn new_has_correct_default_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[5], "[paths]");
     assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
     assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[8], "output = \"\"");
+    assert_eq!(config_split[8], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+
+    assert_eq!(gdnlib_path.exists(), true);
 
     cleanup_after_test();
 
@@ -140,6 +145,39 @@ fn new_specify_output_correct_gdnlib_location() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// It should create a library and set a correct value for the nativescript output.
+#[test]
+fn new_specify_nativescript_correct_config() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
+
+    cmd.assert().success();
+
+    let config =
+        read_to_string("platformer_modules/godot-rust-helper.toml").expect("Unable to read config");
+    let config_split = config.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(config_split[1], "name = \"platformer_modules\"");
+    assert_eq!(config_split[2], "targets = [\"windows\"]");
+    assert_eq!(config_split[3], "modules = []");
+    assert_eq!(config_split[4], "");
+    assert_eq!(config_split[5], "[paths]");
+    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[8], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
 // It should create a new library with --targets=windows,linux,osx and include them in the config.
 #[test]
 fn new_has_correct_targets_config() -> Result<(), Box<dyn Error>> {
@@ -166,7 +204,8 @@ fn new_has_correct_targets_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[5], "[paths]");
     assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
     assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[8], "output = \"\"");
+    assert_eq!(config_split[8], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
 
     cleanup_after_test();
 
@@ -226,7 +265,13 @@ fn create_add_module_to_config() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -250,7 +295,8 @@ fn create_add_module_to_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[5], "[paths]");
     assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
     assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[8], "output = \"\"");
+    assert_eq!(config_split[8], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-output\"");
+    assert_eq!(config_split[9], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"");
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
@@ -265,7 +311,13 @@ fn create_add_module_to_lib() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -310,7 +362,13 @@ fn create_mod_file() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -356,13 +414,125 @@ fn create_mod_file() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// It should create a module and add create a gdns file for it.
+#[test]
+fn create_gdns_file_at_default_location() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output");
+
+    cmd.assert().success();
+
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
+        .arg("run")
+        .arg("--manifest-path=../../Cargo.toml")
+        .arg("create")
+        .arg("Player")
+        .output()
+        .expect("Unable to execute cargo run");
+
+    let gdns_file_contents =
+        read_to_string("../platformer/Player.gdns").expect("Unable to read gdns file");
+    let gdns_file_contents_split = gdns_file_contents.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(
+        gdns_file_contents_split[0],
+        "[gd_resource type=\"NativeScript\" load_steps=2 format=2]"
+    );
+    assert_eq!(gdns_file_contents_split[1], "");
+    assert_eq!(
+        gdns_file_contents_split[2],
+        "[ext_resource path=\"res://godot-rust-helper-output/platformer_modules.gdnlib\" type=\"GDNativeLibrary\" id=1]"
+    );
+    assert_eq!(gdns_file_contents_split[3], "");
+    assert_eq!(gdns_file_contents_split[4], "[resource]");
+    assert_eq!(gdns_file_contents_split[5], "");
+    assert_eq!(gdns_file_contents_split[6], "resource_name = \"Player\"");
+    assert_eq!(gdns_file_contents_split[7], "class_name = \"Player\"");
+    assert_eq!(gdns_file_contents_split[8], "library = ExtResource( 1 )");
+    assert_eq!(gdns_file_contents_split[9], "");
+
+    set_current_dir("../").expect("Unable to change to parent directory");
+
+    remove_file("platformer/Player.gdns").unwrap();
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a module and add create a gdns file for it at the specified nativescript path.
+#[test]
+fn create_gdns_file_at_specified_nativescript_location() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
+
+    cmd.assert().success();
+
+    set_current_dir("platformer_modules").expect("Unable to change to library directory");
+    Command::new("cargo")
+        .arg("run")
+        .arg("--manifest-path=../../Cargo.toml")
+        .arg("create")
+        .arg("Player")
+        .output()
+        .expect("Unable to execute cargo run");
+
+    let gdns_file_contents = read_to_string("../platformer/godot-rust-helper-scripts/Player.gdns")
+        .expect("Unable to read gdns file");
+    let gdns_file_contents_split = gdns_file_contents.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(
+        gdns_file_contents_split[0],
+        "[gd_resource type=\"NativeScript\" load_steps=2 format=2]"
+    );
+    assert_eq!(gdns_file_contents_split[1], "");
+    assert_eq!(
+        gdns_file_contents_split[2],
+        "[ext_resource path=\"res://godot-rust-helper-output/platformer_modules.gdnlib\" type=\"GDNativeLibrary\" id=1]"
+    );
+    assert_eq!(gdns_file_contents_split[3], "");
+    assert_eq!(gdns_file_contents_split[4], "[resource]");
+    assert_eq!(gdns_file_contents_split[5], "");
+    assert_eq!(gdns_file_contents_split[6], "resource_name = \"Player\"");
+    assert_eq!(gdns_file_contents_split[7], "class_name = \"Player\"");
+    assert_eq!(gdns_file_contents_split[8], "library = ExtResource( 1 )");
+    assert_eq!(gdns_file_contents_split[9], "");
+
+    set_current_dir("../").expect("Unable to change to parent directory");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
 // It should create a with multiple capital letters in the name.
 #[test]
 fn create_multiple_captial_letters() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -408,7 +578,13 @@ fn create_multiple_modules() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -430,7 +606,10 @@ fn create_multiple_modules() -> Result<(), Box<dyn Error>> {
 
     let hello_file_path = Path::new("src/hello.rs");
     let world_file_path = Path::new("src/lib.rs");
-    let gdnlib_file_path = Path::new("../platformer/platformer_modules.gdnlib");
+    let gdnlib_file_path =
+        Path::new("../platformer/godot-rust-helper-output/platformer_modules.gdnlib");
+    let hello_ns_file_path = Path::new("../platformer/godot-rust-helper-scripts/Hello.gdns");
+    let world_ns_file_path = Path::new("../platformer/godot-rust-helper-scripts/World.gdns");
 
     let config_file = read_to_string("godot-rust-helper.toml").expect("Unable to read config file");
     let config_split = config_file.split("\n").collect::<Vec<&str>>();
@@ -438,6 +617,8 @@ fn create_multiple_modules() -> Result<(), Box<dyn Error>> {
     assert_eq!(hello_file_path.exists(), true);
     assert_eq!(world_file_path.exists(), true);
     assert_eq!(gdnlib_file_path.exists(), true);
+    assert_eq!(hello_ns_file_path.exists(), true);
+    assert_eq!(world_ns_file_path.exists(), true);
     assert_eq!(config_split[3], "modules = [\"Hello\", \"World\"]");
 
     set_current_dir("../").expect("Unable to change to parent directory");
@@ -453,7 +634,13 @@ fn create_multiple_modules_and_add_to_lib() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -507,7 +694,13 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -535,6 +728,8 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn Error>> {
 
     let mod_file_path = Path::new("src/hello.rs");
 
+    let hello_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/Hello.gdns");
+
     assert_eq!(lib_file_split[0], "#[macro_use]");
     assert_eq!(lib_file_split[1], "extern crate gdnative;");
     assert_eq!(lib_file_split[2], "");
@@ -547,10 +742,9 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn Error>> {
     assert_eq!(lib_file_split[6], "godot_gdnative_init!();");
     assert_eq!(lib_file_split[7], "godot_nativescript_init!(init);");
     assert_eq!(lib_file_split[8], "godot_gdnative_terminate!();");
-
     assert_eq!(config_split[3], "modules = []");
-
     assert_eq!(mod_file_path.exists(), false);
+    assert_eq!(hello_gdns_file.exists(), false);
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
@@ -565,7 +759,13 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--output-path")
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -601,6 +801,9 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn Error>> {
     let hello_mod_file_path = Path::new("src/hello.rs");
     let world_mod_file_path = Path::new("src/world.rs");
 
+    let hello_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/Hello.gdns");
+    let world_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/World.gdns");
+
     assert_eq!(lib_file_split[0], "#[macro_use]");
     assert_eq!(lib_file_split[1], "extern crate gdnative;");
     assert_eq!(lib_file_split[2], "");
@@ -622,6 +825,9 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn Error>> {
     assert_eq!(hello_mod_file_path.exists(), true);
     assert_eq!(world_mod_file_path.exists(), false);
 
+    assert_eq!(hello_gdns_file.exists(), true);
+    assert_eq!(world_gdns_file.exists(), false);
+
     set_current_dir("../").expect("Unable to change to parent directory");
 
     cleanup_after_test();
@@ -635,7 +841,11 @@ fn build_library() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new").arg("platformer_modules").arg("platformer");
+    cmd.arg("new")
+        .arg("platformer_modules")
+        .arg("platformer")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -675,47 +885,9 @@ fn build_specify_output_correct_dll_location() -> Result<(), Box<dyn Error>> {
         .arg("platformer_modules")
         .arg("platformer")
         .arg("--output-path")
-        .arg("platformer/godot-rust-helper-output");
-
-    cmd.assert().success();
-
-    set_current_dir("platformer_modules").expect("Unable to change to library directory");
-    Command::new("cargo")
-        .arg("run")
-        .arg("--manifest-path=../../Cargo.toml")
-        .arg("create")
-        .arg("Hello")
-        .output()
-        .expect("Unable to execute cargo run");
-    Command::new("cargo")
-        .arg("run")
-        .arg("--manifest-path=../../Cargo.toml")
-        .arg("build")
-        .output()
-        .expect("Unable to execute cargo run");
-
-    let dll_file_path = Path::new("../platformer/godot-rust-helper-output/platformer_modules.dll");
-
-    assert_eq!(dll_file_path.exists(), true);
-
-    set_current_dir("../").expect("Unable to change to parent directory");
-
-    cleanup_after_test();
-
-    Ok(())
-}
-
-// It should update a project from the 1.x to 2.x.
-#[test]
-fn update_from_1_to_2() -> Result<(), Box<dyn Error>> {
-    ensure_correct_dir();
-
-    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
-    cmd.arg("new")
-        .arg("platformer_modules")
-        .arg("platformer")
-        .arg("--output-path")
-        .arg("platformer/godot-rust-helper-output");
+        .arg("platformer/godot-rust-helper-output")
+        .arg("--nativescript-path")
+        .arg("platformer/godot-rust-helper-scripts");
 
     cmd.assert().success();
 
@@ -766,5 +938,9 @@ fn cleanup_after_test() {
         }
     } else if Path::new("platformer/godot-rust-helper-output").exists() {
         remove_dir_all("platformer/godot-rust-helper-output").expect("Unable to remove dir")
+    }
+
+    if Path::new("platformer/godot-rust-helper-scripts").exists() {
+        remove_dir_all("platformer/godot-rust-helper-scripts").expect("Unable to remove dir");
     }
 }

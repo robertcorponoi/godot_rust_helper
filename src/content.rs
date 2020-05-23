@@ -148,14 +148,6 @@ pub fn create_gdnlib_file(name: &str, output_path: &PathBuf, targets: &[&str]) -
             "windows" => {
                 let f_name = format!("{}.dll", name);
                 o_path.push(f_name);
-                //o_path.to_slash().expect("Unable to slash");
-
-                // output_path.to_owned().push(f_name);
-                // let f_str = o_path
-                //     .to_owned()
-                //     .into_os_string()
-                //     .into_string()
-                //     .expect("Blah");
 
                 let f_str = o_path.to_slash().unwrap();
 
@@ -187,4 +179,33 @@ pub fn create_gdnlib_file(name: &str, output_path: &PathBuf, targets: &[&str]) -
     }
 
     return gdnlib_vec.join("\n");
+}
+
+/// Returns the contents of a class' .gdns file.
+///
+/// # Arugments
+///
+/// `lib_name` - The name of the library.
+/// `class_name` - The name of the class.
+/// `gdnlib_path` - The path to the gdnlib file.
+pub fn create_gdns_file(lib_name: &str, class_name: &str, gdnlib_path: &PathBuf) -> String {
+    let gdnlib_path_owned = gdnlib_path.to_owned();
+    let gdnlib_os_str = gdnlib_path_owned.into_os_string();
+    let gdnlib_path_str = gdnlib_os_str.to_str().expect("Unable to convert gdnlib path to str");
+
+    let gdns_string = format!(
+        r#"[gd_resource type="NativeScript" load_steps=2 format=2]
+
+[ext_resource path="res://{}/{}.gdnlib" type="GDNativeLibrary" id=1]
+
+[resource]
+
+resource_name = "{}"
+class_name = "{}"
+library = ExtResource( 1 )
+"#,
+    gdnlib_path_str, lib_name, class_name, class_name,
+    );
+
+    return gdns_string;
 }

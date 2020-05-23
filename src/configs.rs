@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 /// The structure of the Cargo.toml file created by the `godot-rust-helper new` command.
 #[derive(Debug, Serialize, Deserialize)]
@@ -94,7 +94,23 @@ pub struct ConfigPaths {
 	pub lib: PathBuf,
 	/// The path to the Godot project.
 	pub godot: PathBuf,
-	/// The path to the gdnlib file and build files in Godot.
+	/// The relative path to the gdnlib file and build files in Godot.
+	pub output: PathBuf,
+	/// The relative path to where the nativescript files in Godot.
+	pub nativescript: PathBuf,
+}
+
+/// The v2.x version of the godot-rust-helper.toml config file.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigV2 {
+	pub general: ConfigGeneral,
+	pub paths: ConfigPathsV2,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigPathsV2 {
+	pub lib: PathBuf,
+	pub godot: PathBuf,
 	pub output: PathBuf,
 }
 

@@ -1,3 +1,7 @@
+## 3.0.0 / 2020-05-22
+- [FEATURE] Nativescript files now get created automatically when you use `godot_rust_helper create`.
+- [FEATURE] Nativescript files output directory can be specified using the `--nativescript-path` option when creating a new library.
+
 ## 2.1.0 / 2020-05-19
 - [FEATURE] Added update command to update projects from using godot_rust_helper 1.x to godot_rust_helper 2.x
 
