@@ -39,8 +39,8 @@ Let's go over the arguments and options in detail with some examples.
 
 **Options:**
 - `--targets` Native components in Godot can target multiple platforms and godot_rust_helper needs to know ahead of time what platforms you plan to target your components for with the available options currently being: windows, linux, and osx. For example if you are targeting Windows and OSX, you need to have have cargo set to build a dll and a dylib file and you would pass `--targets=windows,osx` as the targets. By default if no targets are passed then just `--targets=windows` will be set.
--`--output-path` godot_rust_helper has to place a gdnlib file and the build files in the game's directory. By default these files are placed at the root of the game directory but you can specify a directory in the game (existing or not) where these files go instead using this option.
--`--nativescript-path` The path in the Godot project where all of the nativescript files will be output. By default the nativescript files are placed at the root of the Godot project.
+- `--output-path` godot_rust_helper has to place a gdnlib file and the build files in the game's directory. By default these files are placed at the root of the game directory but you can specify a directory in the game (existing or not) where these files go instead using this option.
+- `--nativescript-path` The path in the Godot project where all of the nativescript files will be output. By default the nativescript files are placed at the root of the Godot project.
 
 **examples:**
 
