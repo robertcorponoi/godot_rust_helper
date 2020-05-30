@@ -53,12 +53,13 @@ fn new_has_correct_default_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[1], "name = \"platformer_modules\"");
     assert_eq!(config_split[2], "targets = [\"windows\"]");
     assert_eq!(config_split[3], "modules = []");
-    assert_eq!(config_split[4], "");
-    assert_eq!(config_split[5], "[paths]");
-    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[8], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[4], "plugin = false");
+    assert_eq!(config_split[5], "");
+    assert_eq!(config_split[6], "[paths]");
+    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
 
     assert_eq!(gdnlib_path.exists(), true);
 
@@ -166,12 +167,13 @@ fn new_specify_nativescript_correct_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[1], "name = \"platformer_modules\"");
     assert_eq!(config_split[2], "targets = [\"windows\"]");
     assert_eq!(config_split[3], "modules = []");
-    assert_eq!(config_split[4], "");
-    assert_eq!(config_split[5], "[paths]");
-    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[8], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"");
+    assert_eq!(config_split[4], "plugin = false");
+    assert_eq!(config_split[5], "");
+    assert_eq!(config_split[6], "[paths]");
+    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"");
 
     cleanup_after_test();
 
@@ -200,12 +202,13 @@ fn new_has_correct_targets_config() -> Result<(), Box<dyn Error>> {
         "targets = [\"windows\", \"linux\", \"osx\"]"
     );
     assert_eq!(config_split[3], "modules = []");
-    assert_eq!(config_split[4], "");
-    assert_eq!(config_split[5], "[paths]");
-    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[8], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[4], "plugin = false");
+    assert_eq!(config_split[5], "");
+    assert_eq!(config_split[6], "[paths]");
+    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
 
     cleanup_after_test();
 
@@ -259,6 +262,436 @@ fn new_has_correct_gdnlib_all_targets() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// It should create a new plugin with the default Cargo.toml file.
+#[test]
+fn plugin_has_correct_cargo_toml() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob");
+
+    cmd.assert().success();
+
+    let cargo_toml =
+        read_to_string("directory_browser/Cargo.toml").expect("Unable to read Cargo.toml");
+    let cargo_toml_split = cargo_toml.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(cargo_toml_split[6], "[lib]");
+    assert_eq!(cargo_toml_split[7], "crate-type = [\"cdylib\"]");
+    assert_eq!(cargo_toml_split[9], "[dependencies]");
+    assert_eq!(
+        cargo_toml_split[10],
+        "gdnative = { git = \"https://github.com/GodotNativeTools/godot-rust\" }"
+    );
+    assert_eq!(cargo_toml_split[11], "godot_rust_helper_ext = { git = \"https://github.com/robertcorponoi/godot_rust_helper_ext\" }");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with the default targets set in the config.
+#[test]
+fn plugin_has_correct_default_config() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob");
+
+    cmd.assert().success();
+
+    let config =
+        read_to_string("directory_browser/godot-rust-helper.toml").expect("Unable to read config");
+    let config_split = config.split("\n").collect::<Vec<&str>>();
+
+    let gdnlib_path = Path::new("platformer/addons/directory_browser/directory_browser.gdnlib");
+
+    assert_eq!(config_split[1], "name = \"directory_browser\"");
+    assert_eq!(config_split[2], "targets = [\"windows\"]");
+    assert_eq!(config_split[3], "modules = [\"DirectoryBrowser\"]");
+    assert_eq!(config_split[4], "plugin = true");
+    assert_eq!(config_split[5], "");
+    assert_eq!(config_split[6], "[paths]");
+    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\directory_browser\"");
+    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"");
+    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"");
+
+    assert_eq!(gdnlib_path.exists(), true);
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with a gdnlib containing the default targets.
+#[test]
+fn plugin_has_correct_gdnlib_default_targets() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob");
+
+    cmd.assert().success();
+
+    let gdnlib = read_to_string("platformer/addons/directory_browser/directory_browser.gdnlib")
+        .expect("Unable to read gdnlib");
+    let gdnlib_split = gdnlib.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(gdnlib_split[0], "[entry]");
+    assert_eq!(gdnlib_split[1], "");
+    assert_eq!(
+        gdnlib_split[2],
+        "Windows.64=\"res://addons/directory_browser/directory_browser.dll\""
+    );
+    assert_eq!(gdnlib_split[3], "");
+    assert_eq!(gdnlib_split[4], "[dependencies]");
+    assert_eq!(gdnlib_split[5], "");
+    assert_eq!(gdnlib_split[6], "Windows.64=[  ]");
+    assert_eq!(gdnlib_split[7], "");
+    assert_eq!(gdnlib_split[8], "[general]");
+    assert_eq!(gdnlib_split[9], "");
+    assert_eq!(gdnlib_split[10], "singleton=false");
+    assert_eq!(gdnlib_split[11], "load_once=true");
+    assert_eq!(gdnlib_split[12], "symbol_prefix=\"godot_\"");
+    assert_eq!(gdnlib_split[13], "reloadable=true");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with --targets=windows,linux,osx and include them in the config.
+#[test]
+fn plugin_has_correct_targets_config() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob")
+        .arg("--targets=windows,linux,osx");
+
+    cmd.assert().success();
+
+    let config =
+        read_to_string("directory_browser/godot-rust-helper.toml").expect("Unable to read config");
+    let config_split = config.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(config_split[0], "[general]");
+    assert_eq!(config_split[1], "name = \"directory_browser\"");
+    assert_eq!(
+        config_split[2],
+        "targets = [\"windows\", \"linux\", \"osx\"]"
+    );
+    assert_eq!(config_split[3], "modules = [\"DirectoryBrowser\"]");
+    assert_eq!(config_split[4], "plugin = true");
+    assert_eq!(config_split[5], "");
+    assert_eq!(config_split[6], "[paths]");
+    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\directory_browser\"");
+    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"");
+    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with --targets=windows,linux-osx and include them in the gdnlib.
+#[test]
+fn plugin_has_correct_gdnlib_all_targets() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob")
+        .arg("--targets=windows,linux,osx");
+
+    cmd.assert().success();
+
+    let gdnlib = read_to_string("platformer/addons/directory_browser/directory_browser.gdnlib")
+        .expect("Unable to read gdnlib");
+    let gdnlib_split = gdnlib.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(gdnlib_split[0], "[entry]");
+    assert_eq!(gdnlib_split[1], "");
+    assert_eq!(
+        gdnlib_split[2],
+        "OSX.64=\"res://addons/directory_browser/libdirectory_browser.dylib\""
+    );
+    assert_eq!(
+        gdnlib_split[3],
+        "X11.64=\"res://addons/directory_browser/libdirectory_browser.so\""
+    );
+    assert_eq!(
+        gdnlib_split[4],
+        "Windows.64=\"res://addons/directory_browser/directory_browser.dll\""
+    );
+    assert_eq!(gdnlib_split[5], "");
+    assert_eq!(gdnlib_split[6], "[dependencies]");
+    assert_eq!(gdnlib_split[7], "");
+    assert_eq!(gdnlib_split[8], "OSX.64=[  ]");
+    assert_eq!(gdnlib_split[9], "X11.64=[  ]");
+    assert_eq!(gdnlib_split[10], "Windows.64=[  ]");
+    assert_eq!(gdnlib_split[11], "");
+    assert_eq!(gdnlib_split[12], "[general]");
+    assert_eq!(gdnlib_split[13], "");
+    assert_eq!(gdnlib_split[14], "singleton=false");
+    assert_eq!(gdnlib_split[15], "load_once=true");
+    assert_eq!(gdnlib_split[16], "symbol_prefix=\"godot_\"");
+    assert_eq!(gdnlib_split[17], "reloadable=true");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with the correct plugin.cfg file.
+#[test]
+fn plugin_has_correct_default_plugin_cfg_file() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--targets=windows,linux,osx");
+
+    cmd.assert().success();
+
+    let plugin_config = read_to_string("platformer/addons/directory_browser/plugin.cfg")
+        .expect("Unable to read gdnlib");
+    let plugin_config_split = plugin_config.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(plugin_config_split[0], "[plugin]");
+    assert_eq!(plugin_config_split[1], "name = \"Directory Browser\"");
+    assert_eq!(plugin_config_split[2], "description = \"\"");
+    assert_eq!(plugin_config_split[3], "author = \"\"");
+    assert_eq!(plugin_config_split[4], "version = \"1.0\"");
+    assert_eq!(
+        plugin_config_split[5],
+        "script = \"directory_browser.gdns\""
+    );
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with the correct plugin.cfg file.
+#[test]
+fn plugin_has_correct_plugin_cfg_file() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob")
+        .arg("--version")
+        .arg("0.1.0")
+        .arg("--targets=windows,linux,osx");
+
+    cmd.assert().success();
+
+    let plugin_config = read_to_string("platformer/addons/directory_browser/plugin.cfg")
+        .expect("Unable to read gdnlib");
+    let plugin_config_split = plugin_config.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(plugin_config_split[0], "[plugin]");
+    assert_eq!(plugin_config_split[1], "name = \"Directory Browser\"");
+    assert_eq!(plugin_config_split[2], "description = \"A test plugin\"");
+    assert_eq!(plugin_config_split[3], "author = \"Bob\"");
+    assert_eq!(plugin_config_split[4], "version = \"0.1.0\"");
+    assert_eq!(
+        plugin_config_split[5],
+        "script = \"directory_browser.gdns\""
+    );
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with the correct plugin base mod file.
+#[test]
+fn plugin_has_correct_plugin_base_file() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob")
+        .arg("--targets=windows,linux,osx");
+
+    cmd.assert().success();
+
+    let plugin_base_gdns = read_to_string("directory_browser/src/directory_browser.rs")
+        .expect("Unable to read mod file");
+    let plugin_base_gdns_split = plugin_base_gdns.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(
+        plugin_base_gdns_split[0],
+        "#[derive(gdnative::NativeClass)]"
+    );
+    assert_eq!(
+        plugin_base_gdns_split[1],
+        "#[inherit(gdnative::EditorPlugin)]"
+    );
+    assert_eq!(plugin_base_gdns_split[2], "pub struct DirectoryBrowser;");
+    assert_eq!(plugin_base_gdns_split[3], "");
+    assert_eq!(plugin_base_gdns_split[4], "#[gdnative::methods]");
+    assert_eq!(plugin_base_gdns_split[5], "impl DirectoryBrowser {");
+    assert_eq!(
+        plugin_base_gdns_split[6],
+        "\tfn _init(_owner: gdnative::EditorPlugin) -> Self {"
+    );
+    assert_eq!(plugin_base_gdns_split[7], "\t\tDirectoryBrowser");
+    assert_eq!(plugin_base_gdns_split[8], "\t}");
+    assert_eq!(plugin_base_gdns_split[9], "");
+    assert_eq!(plugin_base_gdns_split[10], "\t#[export]");
+    assert_eq!(
+        plugin_base_gdns_split[11],
+        "\tfn _ready(&self, _owner: gdnative::EditorPlugin) {"
+    );
+    assert_eq!(
+        plugin_base_gdns_split[12],
+        "\t\tgodot_print!(\"hello, world.\");"
+    );
+    assert_eq!(plugin_base_gdns_split[13], "\t}");
+    assert_eq!(plugin_base_gdns_split[14], "}");
+    assert_eq!(plugin_base_gdns_split[15], "");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with the correct plugin gdns file.
+#[test]
+fn plugin_has_correct_plugin_gdns() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob")
+        .arg("--targets=windows,linux,osx");
+
+    cmd.assert().success();
+
+    let plugin_base_gdns =
+        read_to_string("platformer/addons/directory_browser/directory_browser.gdns")
+            .expect("Unable to read gdnlib");
+    let plugin_base_gdns_split = plugin_base_gdns.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(
+        plugin_base_gdns_split[0],
+        "[gd_resource type=\"NativeScript\" load_steps=2 format=2]"
+    );
+    assert_eq!(plugin_base_gdns_split[1], "");
+    assert_eq!(
+        plugin_base_gdns_split[2],
+        "[ext_resource path=\"res://addons/directory_browser/directory_browser.gdnlib\" type=\"GDNativeLibrary\" id=1]"
+    );
+    assert_eq!(plugin_base_gdns_split[3], "");
+    assert_eq!(plugin_base_gdns_split[4], "[resource]");
+    assert_eq!(plugin_base_gdns_split[5], "");
+    assert_eq!(
+        plugin_base_gdns_split[6],
+        "resource_name = \"DirectoryBrowser\""
+    );
+    assert_eq!(
+        plugin_base_gdns_split[7],
+        "class_name = \"DirectoryBrowser\""
+    );
+    assert_eq!(plugin_base_gdns_split[8], "library = ExtResource( 1 )");
+    assert_eq!(plugin_base_gdns_split[9], "");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
+// It should create a new plugin with with the correct src/lib.rs file.
+#[test]
+fn plugin_has_correct_lib_file() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob")
+        .arg("--targets=windows,linux,osx");
+
+    cmd.assert().success();
+
+    let plugin_lib_file =
+        read_to_string("directory_browser/src/lib.rs").expect("Unable to read lib file");
+    let plugin_lib_file_split = plugin_lib_file.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(plugin_lib_file_split[3], "mod directory_browser;");
+    assert_eq!(
+        plugin_lib_file_split[6],
+        "\thandle.add_tool_class::<directory_browser::DirectoryBrowser>();"
+    );
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
 // It should create a module and add an entry for it in the config file.
 #[test]
 fn create_add_module_to_config() -> Result<(), Box<dyn Error>> {
@@ -291,12 +724,13 @@ fn create_add_module_to_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[1], "name = \"platformer_modules\"");
     assert_eq!(config_split[2], "targets = [\"windows\"]");
     assert_eq!(config_split[3], "modules = [\"Hello\"]");
-    assert_eq!(config_split[4], "");
-    assert_eq!(config_split[5], "[paths]");
-    assert_eq!(config_split[6], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[7], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[8], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-output\"");
-    assert_eq!(config_split[9], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"");
+    assert_eq!(config_split[4], "plugin = false");
+    assert_eq!(config_split[5], "");
+    assert_eq!(config_split[6], "[paths]");
+    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
+    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-output\"");
+    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"");
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
@@ -438,7 +872,7 @@ fn create_gdns_file_at_default_location() -> Result<(), Box<dyn Error>> {
         .expect("Unable to execute cargo run");
 
     let gdns_file_contents =
-        read_to_string("../platformer/Player.gdns").expect("Unable to read gdns file");
+        read_to_string("../platformer/player.gdns").expect("Unable to read gdns file");
     let gdns_file_contents_split = gdns_file_contents.split("\n").collect::<Vec<&str>>();
 
     assert_eq!(
@@ -460,7 +894,7 @@ fn create_gdns_file_at_default_location() -> Result<(), Box<dyn Error>> {
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
-    remove_file("platformer/Player.gdns").unwrap();
+    remove_file("platformer/player.gdns").unwrap();
 
     cleanup_after_test();
 
@@ -492,7 +926,7 @@ fn create_gdns_file_at_specified_nativescript_location() -> Result<(), Box<dyn E
         .output()
         .expect("Unable to execute cargo run");
 
-    let gdns_file_contents = read_to_string("../platformer/godot-rust-helper-scripts/Player.gdns")
+    let gdns_file_contents = read_to_string("../platformer/godot-rust-helper-scripts/player.gdns")
         .expect("Unable to read gdns file");
     let gdns_file_contents_split = gdns_file_contents.split("\n").collect::<Vec<&str>>();
 
@@ -600,26 +1034,27 @@ fn create_multiple_modules() -> Result<(), Box<dyn Error>> {
         .arg("run")
         .arg("--manifest-path=../../Cargo.toml")
         .arg("create")
-        .arg("World")
+        .arg("MainScene")
         .output()
         .expect("Unable to execute cargo run");
 
     let hello_file_path = Path::new("src/hello.rs");
-    let world_file_path = Path::new("src/lib.rs");
+    let main_scene_file_path = Path::new("src/main_scene.rs");
     let gdnlib_file_path =
         Path::new("../platformer/godot-rust-helper-output/platformer_modules.gdnlib");
-    let hello_ns_file_path = Path::new("../platformer/godot-rust-helper-scripts/Hello.gdns");
-    let world_ns_file_path = Path::new("../platformer/godot-rust-helper-scripts/World.gdns");
+    let hello_ns_file_path = Path::new("../platformer/godot-rust-helper-scripts/hello.gdns");
+    let main_scene_ns_file_path =
+        Path::new("../platformer/godot-rust-helper-scripts/main_scene.gdns");
 
     let config_file = read_to_string("godot-rust-helper.toml").expect("Unable to read config file");
     let config_split = config_file.split("\n").collect::<Vec<&str>>();
 
     assert_eq!(hello_file_path.exists(), true);
-    assert_eq!(world_file_path.exists(), true);
+    assert_eq!(main_scene_file_path.exists(), true);
     assert_eq!(gdnlib_file_path.exists(), true);
     assert_eq!(hello_ns_file_path.exists(), true);
-    assert_eq!(world_ns_file_path.exists(), true);
-    assert_eq!(config_split[3], "modules = [\"Hello\", \"World\"]");
+    assert_eq!(main_scene_ns_file_path.exists(), true);
+    assert_eq!(config_split[3], "modules = [\"Hello\", \"MainScene\"]");
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
@@ -688,6 +1123,73 @@ fn create_multiple_modules_and_add_to_lib() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// It should create a module inside of a plugin.
+#[test]
+fn create_additional_plugin_script() -> Result<(), Box<dyn Error>> {
+    ensure_correct_dir();
+
+    let mut cmd = Command::cargo_bin("godot_rust_helper")?;
+    cmd.arg("plugin")
+        .arg("Directory Browser")
+        .arg("directory_browser")
+        .arg("platformer")
+        .arg("--description")
+        .arg("A test plugin")
+        .arg("--author")
+        .arg("Bob");
+
+    cmd.assert().success();
+
+    set_current_dir("directory_browser").expect("Unable to change to plugin directory");
+    Command::new("cargo")
+        .arg("run")
+        .arg("--manifest-path=../../Cargo.toml")
+        .arg("create")
+        .arg("FolderStructure")
+        .output()
+        .expect("Unable to execute cargo run");
+
+    let lib_file = read_to_string("src/lib.rs").expect("Unable to read lib file");
+    let lib_file_split = lib_file.split("\n").collect::<Vec<&str>>();
+
+    assert_eq!(lib_file_split[0], "#[macro_use]");
+    assert_eq!(lib_file_split[1], "extern crate gdnative;");
+    assert_eq!(lib_file_split[2], "");
+    assert_eq!(lib_file_split[3], "mod directory_browser;");
+    assert_eq!(lib_file_split[4], "mod folder_structure;");
+    assert_eq!(lib_file_split[5], "");
+    assert_eq!(
+        lib_file_split[6],
+        "fn init(handle: gdnative::init::InitHandle) {"
+    );
+    assert_eq!(
+        lib_file_split[7],
+        "\thandle.add_tool_class::<directory_browser::DirectoryBrowser>();"
+    );
+    assert_eq!(
+        lib_file_split[8],
+        "\thandle.add_tool_class::<folder_structure::FolderStructure>();"
+    );
+    assert_eq!(lib_file_split[9], "}");
+    assert_eq!(lib_file_split[10], "");
+    assert_eq!(lib_file_split[11], "godot_gdnative_init!();");
+    assert_eq!(lib_file_split[12], "godot_nativescript_init!(init);");
+    assert_eq!(lib_file_split[13], "godot_gdnative_terminate!();");
+
+    assert_eq!(Path::new("src/folder_structure.rs").exists(), true);
+
+    assert_eq!(
+        Path::new("../platformer/addons/directory_browser/folder_structure.gdns").exists(),
+        true
+    );
+
+    set_current_dir("../").expect("Unable to change to parent directory");
+
+    cleanup_after_test();
+
+    Ok(())
+}
+
 // It should remove all traces of a created module.
 #[test]
 fn destroy_remove_created_module() -> Result<(), Box<dyn Error>> {
@@ -728,7 +1230,7 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn Error>> {
 
     let mod_file_path = Path::new("src/hello.rs");
 
-    let hello_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/Hello.gdns");
+    let hello_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/hello.gdns");
 
     assert_eq!(lib_file_split[0], "#[macro_use]");
     assert_eq!(lib_file_split[1], "extern crate gdnative;");
@@ -801,8 +1303,8 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn Error>> {
     let hello_mod_file_path = Path::new("src/hello.rs");
     let world_mod_file_path = Path::new("src/world.rs");
 
-    let hello_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/Hello.gdns");
-    let world_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/World.gdns");
+    let hello_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/hello.gdns");
+    let world_gdns_file = Path::new("../platformer/godot-rust-helper-scripts/world.gdns");
 
     assert_eq!(lib_file_split[0], "#[macro_use]");
     assert_eq!(lib_file_split[1], "extern crate gdnative;");
@@ -929,7 +1431,13 @@ fn ensure_correct_dir() {
 
 // Removes the platformer_modules folder and the gdnlib/dll files.
 fn cleanup_after_test() {
-    remove_dir_all("platformer_modules").expect("Unable to remove dir");
+    if Path::new("platformer_modules").exists() {
+        remove_dir_all("platformer_modules").expect("Unable to remove dir");
+    }
+
+    if Path::new("directory_browser").exists() {
+        remove_dir_all("directory_browser").expect("Unable to remove dir");
+    }
 
     if Path::new("platformer/platformer_modules.gdnlib").exists() {
         remove_file("platformer/platformer_modules.gdnlib").expect("Unable to remove file");
@@ -942,5 +1450,9 @@ fn cleanup_after_test() {
 
     if Path::new("platformer/godot-rust-helper-scripts").exists() {
         remove_dir_all("platformer/godot-rust-helper-scripts").expect("Unable to remove dir");
+    }
+
+    if Path::new("platformer/addons").exists() {
+        remove_dir_all("platformer/addons").expect("Unable to remove dir");
     }
 }

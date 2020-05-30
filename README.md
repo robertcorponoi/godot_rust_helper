@@ -18,7 +18,27 @@ To upgrade:
 $ cargo install --force godot_rust_helper
 ```
 
-Note: This documentation is for version 3.x. Documentation for versions 2.x can be found [here](https://github.com/robertcorponoi/godot_rust_helper/tree/v2.1.0) and versions 1.x can be found [here](https://github.com/robertcorponoi/godot_rust_helper/tree/v1.1.0).
+Note: This documentation is for version 4.x. Documentation for previous versions can be found below:
+
+- [3.x](https://github.com/robertcorponoi/godot_rust_helper/tree/v3.0.0)
+- [2.x](https://github.com/robertcorponoi/godot_rust_helper/tree/v2.1.0)
+- [1.x](https://github.com/robertcorponoi/godot_rust_helper/tree/v1.1.0)
+
+## **Table of Contents**
+
+- [Full Example](#full-example)
+- [Commands](#commands)
+  - [new](#new)
+  - [create](#create)
+  - [destroy](#destroy)
+  - [build](#build)
+  - [plugin](#plugin)
+  - [update](#update)
+  - [rebase](#rebase)
+
+## **Full Example**
+
+Below is a basic guide to setting up Rust with a Godot project from start to finish.
 
 ## **Step 1: Creating the Project's Library**
 
@@ -97,7 +117,7 @@ $ godot_rust_helper create Player
 ```
 
 ```bash
-$ godot_rust_helper create HUD
+$ godot_rust_helper create MainScene
 ```
 
 ## **Step 3: Building the Library**
@@ -143,19 +163,79 @@ Now if you run your game you will see your component's functionality up and runn
 
 **Note:** You do not need to keep your .gdns scripts in any certain place so feel free to move them around. As long as the gdnlib and dynamic library files are not moved then the nativescript files can be placed anywhere in the Godot project.
 
-## **Other Commands**
+## **Commands**
 
-The following are commands are situational but are not needed for the basic setup.
+### **new**
 
-### **destroy**
+Creates a new library for your Rust scripts that connects to a Godot project.
 
-Removes a Rust component from the library.
+```
+Usage: godot_rust_helper new <destination> <godot-project> [options]
 
-```bash
-$ godot_rust_helper destroy <class_name>
+destination:                    The destination directory for the library. Note that libraries are created using cargo so you should adhere to cargo naming guidelines and use underscores for multiple words.
+godot-project:                  The directory of the Godot project that this library contains the Rust scripts for.
+
+Options:
+-t, --targets <targets>         A string of comma separated targets of the platforms you would like to build the project for. Currently the available options are windows, linux, and osx with a default value of just windows.
+-o, --output-path <path>        The path within the Godot project where the gdnlib and dynamic libraries will get output to. By default these files will be output to the root of the Godot project.
+-n, --nativescript-path <path>  The path within the Godot project where the gdns files will be output to. By default these files will be output to the root of the Godot project.
 ```
 
-- **class_name** The name of the class to destroy. This should be the same name that was used when it was created with `godot_rust_helper create`.
+**examples:**
+
+Creating a default library for Windows only builds:
+
+```bash
+$ godot_rust_helper new breakout_components ~/Documents/projects/breakout
+```
+
+Creating an library for Windows, Linux, and OSX builds:
+
+```bash
+$ godot_rust_helper new breakout_components ~/Documents/projects/breakout --targets=windows,linux,osx
+```
+
+Creating a library and having the files output to `build-output`:
+
+```bash
+$ godot_rust_helper new breakout_components ~/Documents/projects/breakout --output-path ~/Documents/projects/breakout/build-output
+```
+
+Creating a library and having the nativescript files output to `scripts`:
+
+```bash
+$ godot_rust_helper new breakout_components ~/Documents/projects/breakout --nativescript-path ~/Documents/projects/breakout/scripts
+```
+
+## **create**
+
+Creates a Rust script and a corresponding gdns file in the Godot project that when build can be placed on a Node.
+
+```
+Usage: godot_rust_helper create <class-name>
+
+class-name  The name passed to this command should be the class name of the component. Class names must start with capital letters. Examples include 'Player', 'Princess', 'Mob', 'HUD', etc.
+```
+
+**examples:**
+
+```bash
+$ godot_rust_helper create Player
+```
+
+```bash
+$ godot_rust_helper create MainScene
+```
+
+## **destroy**
+
+Removes all traces of a script created with `create`.
+
+```
+Usage: godot_rust_helper destroy <class-name>
+
+class-name The name of the class to destroy. This should be the same name that was used when it was created with `godot_rust_helper create`.
+```
 
 **examples:**
 
@@ -164,48 +244,73 @@ $ godot_rust_helper destroy Player
 ```
 
 ```bash
-$ godot_rust_helper destroy HUD
+$ godot_rust_helper destroy MainScene
 ```
 
-### **rebase**
+## **build**
 
-Changes the path of the project, godot project directory, and optionally the targets in the config if you cloned/downlaoded the project from elsewhere.
+Builds the project to generate the dynamic libraries and then copies them to the Godot project `output-path` directory.
 
-This command has to be used from inside the project you want to rebase.
-
-```bash
-$ godot_rust_helper rebase <path_to_game> [targets]
 ```
+Usage: godot_rust_helper build [options]
 
-- **path_to_game** The path to godot game on your file system.
-- **targets** Optionally change the targets.
+Options:
+-w,--watch  Watches the src directory of the library for changes and runs the build command automatically.
+```
 
 **examples:**
 
 ```bash
-$ godot_rust_helper rebase ../path/to/game
+$ godot_rust_helper build
 ```
 
 ```bash
-$ godot_rust_helper rebase ../path/to/game --targets=linux,osx
+$ godot_rust_helper build --watch
+```
+
+## **plugin**
+
+Creates a library intended to be used as a plugin. This creates the directory structure for the plugin (addons/plugin-name) and also creates the plugin configuration file and the base plugin script.
+
+```
+Usage: godot_rust_helper plugin <name> <destination> <godot-project> [options]
+
+name                           The name of the plugin. If the plugin consists of more than 1 word then it needs to be in quotes.
+destination                    The destination directory for the library. Note that libraries are created using cargo so you should adhere to cargo naming guidelines and use underscores for multiple words.
+godot-project                  The directory of the Godot project that this library contains the Rust scripts for.
+
+Options:
+-t, --targets <targets>         A string of comma separated targets of the platforms you would like to build the project for. Currently the available options are windows, linux, and osx with a default value of just windows.
+-a, --author <author>           The author of the plugin.
+-d, --description <description> The description of the plugin.
+-v, --version <version>         The initial version of the plugin. If no version is provided then "1.0" will be used.
+```
+
+**example:**
+
+```bash
+$ godot_rust_helper plugin "Directory Browser" directory_browser ../path/to/godot/game --description "Helps you map out your game's file structure" --author "Bob"
 ```
 
 ### **update**
 
-Updates a project from using godot_rust_helper 1.x or 2.x to godot_rust_helper 3.x.
+Updates a project from using and older version of godot_rust_helper to using the latest version of godot_rust_helper.
 
 This command has to be used from inside the project you want to update.
 
-```bash
-$ godot_rust_helper update [output-path]
-```
+**Note:** In version 4.x, gdns files are now output as snake case instead of pascal case. The update commmand does update your existing gdns file names because it would case lots of issues within the Godot project so you can leave them as they are or update them manually. 
 
-- **output-path** Since godot_rust_helper 2.x doesn't create a rust-modules folder you can specify this to change the location where the gdnlib and build files reside. If left blank, the rust-modules folder will be used by default.
-- **nativescript-path** Since godot_rust_helper 3.x you can specify the directory where your nativescript files are output.
+```
+Usage: godot_rust_helper update [options]
+
+Options:
+output-path       Since version 2.x, godot_rust_rust doesn't create a rust-modules folder you can specify this to change the location where the gdnlib and dynamic libraries reside. If left blank, the rust-modules folder will be used by default.
+nativescript-path Since version 3.x, godot_rust_helper lets you spcify the directory where your .gdns files get output to.
+```
 
 **examples:**
 
-Leaving the rust-modules folder:
+Leaving the rust-modules folder (if you're updating from 1.x or 2.x to latest):
 
 ```bash
 $ godot_rust_helper update
@@ -217,7 +322,40 @@ Moving the output files to a new directory:
 $ godot_rust_helper update --output-path /path/to/godot-project/gdr-output
 ```
 
+Specifying a directory for the gdns files:
+
+```bash
+$ godot_rust_helper update --output-path /path/to/godot-project/gdr-output --nativescript-path /path/to/godot-project/gdr-scripts
+```
+
 **Note:** You will probably have to run another build and you will definitely have to reassign the scripts to the gdnlib file after updating.
+
+### **rebase**
+
+The rebase command is useful if you import someone else's godot_rust_helper project and want to modify it locally.
+
+This command lets you change the location of the godot project and the targets.
+
+This command has to be used from inside the project you want to rebase.
+
+```
+Usage: godot_rust_helper rebase <new-godot-path> [options]
+
+new-godot-path The path to where the Godot project that this library is for is on your file system.
+
+Options:
+targets The new build targets for the project, this should be used like it is in the `new` command.
+```
+
+**examples:**
+
+```bash
+$ godot_rust_helper rebase ../path/to/game
+```
+
+```bash
+$ godot_rust_helper rebase ../path/to/game --targets=linux,osx
+```
 
 ## **Tests**
 

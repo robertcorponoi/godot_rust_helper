@@ -5,7 +5,8 @@ use std::process::{exit, Command};
 use std::sync::mpsc::channel;
 
 use crate::configs::{
-    Cargo, Config, ConfigGeneral, ConfigPaths, ConfigPathsV2, ConfigV1, ConfigV2,
+    Cargo, Config, ConfigGeneral, ConfigGeneralV3, ConfigPaths, ConfigPathsV2, ConfigV1, ConfigV2,
+    ConfigV3, PluginConfig, PluginConfigFields,
 };
 use crate::content;
 use crate::utils;
@@ -35,7 +36,7 @@ pub fn create_library(
 ) {
     println!("{}", "creating library".white());
 
-    // Make the destination directory an absolute path if it is not already one.
+    // Make the destination directory is an absolute path if it is not already one.
     let dest_path = if !destination.is_absolute() {
         utils::absolute_path(destination)
             .expect("Unable to create absolute path from destination path")
@@ -45,7 +46,7 @@ pub fn create_library(
         Path::new(&destination).to_path_buf()
     };
 
-    // Make the godot directory an absolute path if it is not already one.
+    // Make the godot directory is an absolute path if it is not already one.
     let godot_path = if !godot_project_dir.is_absolute() {
         utils::absolute_path(godot_project_dir)
             .expect("Unable to create absolute path from destination path")
@@ -55,7 +56,7 @@ pub fn create_library(
         Path::new(&godot_project_dir).to_path_buf()
     };
 
-    // Make the output path an absolute path if it is not already one.
+    // Make the output path is an absolute path if it is not already one.
     let output_as_path_buf = PathBuf::from(output);
     let output_path = if output_as_path_buf == PathBuf::from("") {
         PathBuf::from(&godot_path)
@@ -80,12 +81,6 @@ pub fn create_library(
     } else {
         Path::new(&ns_path_as_path_buf).to_path_buf()
     };
-
-    // We don't need the full path to the output and nativescript directories since they're relative to the godot path.
-    // let output_relative_path =
-    //     diff_paths(&output_path, &godot_path).expect("Unable to get output path diff");
-    // let ns_relative_path =
-    //     diff_paths(&ns_path, &godot_path).expect("Unable to get nativescript path diff");
 
     // Check to see if the destination directory already exists, we don't want to overwrite an existing project.
     if dest_path.exists() {
@@ -166,6 +161,7 @@ pub fn create_library(
         name: dest_basename_string.to_string(),
         modules: vec![],
         targets: targets_split,
+        plugin: false,
     };
     let config = Config {
         general: config_general,
@@ -284,7 +280,7 @@ pub fn create_module(name: &str) {
     }
 
     // Create a new src/lib.rs file with the new module added to it.
-    let lib_file = content::create_lib_file(&config.general.modules);
+    let lib_file = content::create_lib_file(&config.general.modules, config.general.plugin);
     let lib_file_path = current_dir_path.join("src").join("lib.rs");
 
     match write(lib_file_path, lib_file) {
@@ -318,7 +314,7 @@ pub fn create_module(name: &str) {
         &diff_paths(&config.paths.output, &config.paths.godot)
             .expect("Unable to get output path diff"),
     );
-    let gdns_file_name = format!("{}.gdns", name);
+    let gdns_file_name = format!("{}.gdns", name_normalized);
     let gdns_file_path = &config.paths.nativescript.join(gdns_file_name);
 
     std::fs::File::create(&gdns_file_path).expect("Unable to create gdns file");
@@ -375,7 +371,7 @@ pub fn destroy_module(name: &str) {
     let lib_file = if config.general.modules.len() == 0 {
         content::create_initial_lib_file()
     } else {
-        content::create_lib_file(&config.general.modules)
+        content::create_lib_file(&config.general.modules, config.general.plugin)
     };
 
     let lib_file_path = current_dir_path.join("src").join("lib.rs");
@@ -591,7 +587,7 @@ pub fn rebase(godot_project_dir: PathBuf, targets: String) {
 /// `output` - As of godot_rust_helper 2.x the 'rust-modules' directory no longer exists and is customizable. You can change this to a different directory at this time but you'll have to fix all references in Godot.
 /// `nativescript_path` - As of godot_rust_helper 3.x the nativescript files can be placed into a custom directory within the Godot project.
 pub fn update(output: PathBuf, nativescript_path: PathBuf) {
-    println!("{}", "Updating project from v1.x to v2.x...".white());
+    println!("{}", "Updating project from an older version of godot_rust_helper...".white());
 
     // Check to see if we are in a library created by the `new` command.
     let current_dir_path = current_dir().expect("Unable to get current directory");
@@ -630,6 +626,7 @@ pub fn update(output: PathBuf, nativescript_path: PathBuf) {
             name: current_config.general.name,
             targets: current_config.general.targets,
             modules: current_config.general.modules,
+            plugin: false,
         };
         let mut new_config = ConfigV2 {
             general: new_config_general,
@@ -763,12 +760,12 @@ pub fn update(output: PathBuf, nativescript_path: PathBuf) {
             ),
             nativescript: current_config.paths.godot.to_owned(),
         };
-        let new_config_general = ConfigGeneral {
+        let new_config_general = ConfigGeneralV3 {
             name: current_config.general.name,
             targets: current_config.general.targets,
             modules: current_config.general.modules,
         };
-        let mut new_config = Config {
+        let mut new_config = ConfigV3 {
             general: new_config_general,
             paths: new_config_paths,
         };
@@ -792,7 +789,7 @@ pub fn update(output: PathBuf, nativescript_path: PathBuf) {
         // We're done with the config for now so we can write it over the original.
         let new_config_string =
             toml::to_string(&new_config).expect("Unable to convert v3.x config to string");
-        match write(config_path, new_config_string) {
+        match write(&config_path, new_config_string) {
             Ok(_v) => (),
             Err(e) => {
                 println!(
@@ -804,8 +801,286 @@ pub fn update(output: PathBuf, nativescript_path: PathBuf) {
             }
         }
     }
+    if !config_string.contains("plugin") {
+        config_string = read_to_string(&config_path)
+            .expect("Unable to read godot-rust-helper.toml config file");
+        // Parse the current configuration of the project as configuration v3.
+        let current_config: ConfigV3 = toml::from_str(&config_string).expect(
+            "Unable to parse godot-rust-helper config file of project using godot_rust_helper v3.x",
+        );
+
+        // Create an instance of the new configuration of the project using the values from the current config.
+        let new_config_paths = ConfigPaths {
+            lib: current_config.paths.lib,
+            godot: current_config.paths.godot.to_owned(),
+            output: utils::absolute_path(current_config.paths.output).expect(
+                "Unable to create absolute path from from godot_rust_helper v3.x output path",
+            ),
+            nativescript: current_config.paths.godot.to_owned(),
+        };
+        let new_config_general = ConfigGeneral {
+            name: current_config.general.name,
+            targets: current_config.general.targets,
+            modules: current_config.general.modules,
+            plugin: false,
+        };
+        let new_config = Config {
+            general: new_config_general,
+            paths: new_config_paths,
+        };
+
+        // We're done making changes to the config so we can write over the original now.
+        // We're done with the config for now so we can write it over the original.
+        let new_config_string =
+            toml::to_string(&new_config).expect("Unable to convert v4.x config to string");
+        match write(config_path, new_config_string) {
+            Ok(_v) => (),
+            Err(e) => {
+                println!(
+                    "{}: {}",
+                    "There was a problem writing to the v4.x config file".red(),
+                    e
+                );
+                exit(1);
+            }
+        }
+    }
 
     println!("{}", "Update finished".green());
+}
+
+/// Creates a plugin similar to using `godot_rust_helper new` by creating the base file structure and the plugin.cfg file that allows us to create
+/// a Nativescript plugin.
+///
+/// # Arguments
+///
+/// `name` - The name of the plugin.
+/// `destination` - The destination directory for the library.
+/// `godot_project_dir` - The directory that contains the Godot project that the plugin is for.
+/// `description` - A short description of the plugin.
+/// `author` - The author of the plugin. If no author is provided then the author field from the Cargo.toml is used.
+/// `version` - The initial version of the plugin.
+/// `targets` - The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
+pub fn create_plugin(
+    name: String,
+    destination: PathBuf,
+    godot_project_dir: PathBuf,
+    description: String,
+    author: String,
+    version: String,
+    targets: String,
+) {
+    println!("{}", "creating plugin".white());
+
+    // Make the destination directory is an absolute path if it is not already one.
+    let dest_path = if !destination.is_absolute() {
+        utils::absolute_path(destination)
+            .expect("Unable to create absolute path from destination path")
+            .as_path()
+            .to_owned()
+    } else {
+        Path::new(&destination).to_path_buf()
+    };
+
+    // Make the godot directory is an absolute path if it is not already one.
+    let godot_path = if !godot_project_dir.is_absolute() {
+        utils::absolute_path(godot_project_dir)
+            .expect("Unable to create absolute path from destination path")
+            .as_path()
+            .to_owned()
+    } else {
+        Path::new(&godot_project_dir).to_path_buf()
+    };
+
+    // Check to see if the destination directory already exists, we don't want to overwrite an existing project.
+    if dest_path.exists() {
+        println!("A library with the specified destination already exists, please choose another destination for the library.");
+        exit(1);
+    }
+
+    // Check to make sure that the provided path to the Godot project is valid, i.e. it has a project.godot file at its root.
+    let godot_project_path = godot_path.join("project.godot");
+    if !godot_project_path.exists() {
+        println!("The godot project dir provided is not valid.");
+        exit(1);
+    }
+
+    // Run the `cargo new --lib` command in the destination directory to create the library.
+    let dest_parent = dest_path
+        .parent()
+        .expect("Unable to get destination parent");
+    let dest_basename = dest_path
+        .file_stem()
+        .expect("Unable to get destination basename");
+    set_current_dir(&dest_parent).expect("Unable to change to destination parent directory");
+
+    let dest_basename_string = dest_basename
+        .to_str()
+        .expect("Unable to convert destination basename to string");
+    match Command::new("cargo")
+        .arg("new")
+        .arg(dest_basename_string)
+        .arg("--lib")
+        .output()
+    {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("{}", e);
+            exit(1);
+        }
+    }
+
+    // Set up the Cargo.toml file of the library to have the required tags and dependencies.
+    set_current_dir(&dest_basename).expect("Unable to change to library directory");
+    let cargo_toml_string = read_to_string("Cargo.toml").expect("Unable to read Cargo.toml");
+    let cargo_toml: Cargo = toml::from_str(&cargo_toml_string).expect("Unable to parse Cargo.toml");
+    let cargo_toml_str = toml::to_string(&cargo_toml).expect("Unable to convert to toml to string");
+
+    match write(
+        "Cargo.toml",
+        cargo_toml_str
+            .replace("\\", "")
+            .replace("\"{", "{")
+            .replace("}\"", "}"),
+    ) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("There was a problem creating the library: {}", e);
+            exit(1);
+        }
+    }
+
+    // Make sure the targets provided are in the list of accepted targets.
+    let valid_targets = &["windows", "linux", "osx"];
+    let targets_split: Vec<String> = targets.split(",").map(|s| s.to_string()).collect();
+    for t in &targets_split {
+        if !valid_targets.iter().any(|&i| i == t) {
+            println!("An invalid target was specified: {}", t);
+            exit(1);
+        }
+    }
+
+    // Create all of the variations of the plugin names we'll need.
+    let plugin_name = &name;
+    let plugin_name_normalized = utils::format_str(plugin_name.to_string());
+    // Create all of the paths we'll need for the plugin files.
+    let plugin_path = godot_path.join("addons").join(&plugin_name_normalized);
+    let plugin_cfg_path = plugin_path.join("plugin.cfg");
+
+    // Create the folder structure for the plugin if it doesn't already exist.
+    match std::fs::create_dir_all(&plugin_path) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!(
+                "There was a problem creating the the plugin directory structure: {}",
+                e
+            );
+            exit(1);
+        }
+    }
+
+    // Create the config and write it to the godot-rust-helper.toml file.
+    let config_paths = ConfigPaths {
+        lib: dest_path.to_owned(),
+        godot: godot_path.to_owned(),
+        output: plugin_path.to_owned(),
+        nativescript: plugin_path.to_owned(),
+    };
+    let config_general = ConfigGeneral {
+        name: dest_basename_string.to_string(),
+        modules: vec![],
+        targets: targets_split.to_owned(),
+        plugin: true,
+    };
+    let config = Config {
+        general: config_general,
+        paths: config_paths,
+    };
+    let config_string = toml::to_string(&config).expect("Unable to convert config to string");
+    match write("godot-rust-helper.toml", config_string) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("There was a problem creating the config file: {}", e);
+            exit(1);
+        }
+    }
+
+    // Create the gdnlib file and write it to the plugin folder.
+    let targets_str: Vec<&str> = targets_split.iter().map(AsRef::as_ref).collect();
+    let gdnlib = content::create_gdnlib_file(
+        &config.general.name,
+        &diff_paths(&config.paths.output, &config.paths.godot)
+            .expect("Unable to get path diff for the plugin"),
+        &targets_str,
+    );
+
+    // Finally create the new gndlib file and write to it.
+    let gdnlib_file_name = format!("{}.gdnlib", &config.general.name);
+
+    let gdnlib_path = &config.paths.output;
+    std::fs::File::create(&gdnlib_path.join(&gdnlib_file_name))
+        .expect("Unable to create gdnlib file for the plugin");
+
+    match write(&config.paths.output.join(gdnlib_file_name), gdnlib) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!(
+                "There was a problem creating the gdnlib file for the plugin: {}",
+                e
+            );
+            exit(1);
+        }
+    }
+
+    // Create the plugin.cfg file and write it to the plugin folder.
+    let plugin_cfg_fields = PluginConfigFields {
+        name: name.to_owned(),
+        description: description,
+        author: author,
+        version: version,
+        script: format!("{}.gdns", plugin_name_normalized),
+    };
+    let plugin_cfg = PluginConfig {
+        plugin: plugin_cfg_fields,
+    };
+    let plugin_cfg_string =
+        toml::to_string(&plugin_cfg).expect("Unable to convert plugin config to string");
+    match write(plugin_cfg_path, plugin_cfg_string) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("There was a problem creating the plugin config file: {}", e);
+            exit(1);
+        }
+    }
+
+    // Run `cargo create` to create the module's base script file that the configuration expects.
+    match Command::new("godot_rust_helper")
+        .arg("create")
+        .arg(plugin_name.replace(" ", ""))
+        .output()
+    {
+        Ok(_v) => (),
+        Err(e) => {
+            println!("{}", e);
+            exit(1);
+        }
+    }
+    // Since this base script is a bit different, all instances of Node need to be swapped with EditorPlugin and then we write it back.
+    let base_plugin_script_path = format!("src/{}.rs", plugin_name_normalized);
+    let base_plugin_script =
+        read_to_string(&base_plugin_script_path).expect("Unable to read plugin's base script");
+    let updated_base_plugin_script = base_plugin_script.replace("Node", "EditorPlugin");
+    match write(base_plugin_script_path, updated_base_plugin_script) {
+        Ok(_v) => (),
+        Err(e) => {
+            println!(
+                "There was a problem modifying the plugin's base script: {}",
+                e
+            );
+            exit(1);
+        }
+    }
+    println!("{}", "plugin created".white());
 }
 
 /// Runs the build command and logs some info used by `watch_library` to show the version of godot_rust_helper and the timestamp of when the last build was run.

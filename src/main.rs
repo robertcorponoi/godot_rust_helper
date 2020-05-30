@@ -27,7 +27,7 @@ enum GodotRustHelper {
 		/// The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
 		#[structopt(long, short, default_value = "windows")]
 		targets: String,
-		/// godot_rust_helper needs to output certain files to the Godot project directory such as a gdnlib and the compiled files. 
+		/// godot_rust_helper needs to output certain files to the Godot project directory such as a gdnlib and the compiled files.
 		/// If you specify a directory for the output then the output files will go there, otherwise they will go in the root of the Godot project directory.
 		#[structopt(long, short, default_value = "")]
 		output_path: PathBuf,
@@ -74,6 +74,30 @@ enum GodotRustHelper {
 		#[structopt(long, short, default_value = "")]
 		nativescript_path: PathBuf,
 	},
+	/// Creates a plugin similar to the `new` command but also builds the correct structure and plugin config.
+	Plugin {
+		/// The name of the plugin.
+		#[structopt()]
+		name: String,
+		/// The name of the library that will contain your plugin code. The name of the library should be the name of the plugin but in snake case.
+		#[structopt(parse(from_os_str))]
+		destination: PathBuf,
+		/// The directory that contains the project.godot file of the game that the modules are for.
+		#[structopt(parse(from_os_str))]
+		godot_project_dir: PathBuf,
+		/// The description of the plugin.
+		#[structopt(long, short, default_value = "")]
+		description: String,
+		/// The author of the plugin.
+		#[structopt(long, short, default_value = "")]
+		author: String,
+		/// The initial version of the plugin.
+		#[structopt(long, short, default_value = "1.0")]
+		version: String,
+		/// The build targets that should be set. As of writing this, the available targets are windows, linux, and osx with the default being just windows.
+		#[structopt(long, short, default_value = "windows")]
+		targets: String,
+	},
 }
 
 fn main() {
@@ -86,7 +110,13 @@ fn main() {
 			output_path,
 			nativescript_path,
 		} => {
-			commands::create_library(destination, godot_project_dir, targets, output_path, nativescript_path);
+			commands::create_library(
+				destination,
+				godot_project_dir,
+				targets,
+				output_path,
+				nativescript_path,
+			);
 		}
 		// When the `create` command is used we run the `commands::create_module` function to create a module inside of the library.
 		GodotRustHelper::Create { name } => {
@@ -112,8 +142,31 @@ fn main() {
 			commands::rebase(godot_project_dir, targets);
 		}
 		// When the `update` command is used we run the `commands::update` function to update the project from using godot_rust_helper 1.x to godot_rust_helper 2.x.
-		GodotRustHelper::Update { output_path, nativescript_path } => {
+		GodotRustHelper::Update {
+			output_path,
+			nativescript_path,
+		} => {
 			commands::update(output_path, nativescript_path);
+		}
+		// When the `plugin` command is used we run the `commands::plugin` function to create a new plugin setup.
+		GodotRustHelper::Plugin {
+			name,
+			destination,
+			godot_project_dir,
+			description,
+			author,
+			version,
+			targets,
+		} => {
+			commands::create_plugin(
+				name,
+				destination,
+				godot_project_dir,
+				description,
+				author,
+				version,
+				targets,
+			);
 		}
 	}
 }

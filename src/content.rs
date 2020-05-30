@@ -23,14 +23,22 @@ godot_gdnative_terminate!();"#
 /// # Arguments
 ///
 /// `modules` - The modules that have been created.
-pub fn create_lib_file(modules: &Vec<String>) -> String {
+/// `is_plugin` - Indicates whether the modules are for a plugin or not.
+pub fn create_lib_file(modules: &Vec<String>, is_plugin: bool) -> String {
     let mut mods = String::new();
     let mut classes = String::new();
 
     for module in modules {
         let mod_normalized = utils::format_str(module.to_string());
         let mod_formatted = format!("\nmod {};", mod_normalized);
-        let class_formatted = format!("\thandle.add_class::<{}::{}>();", mod_normalized, module);
+        let class_formatted = if is_plugin {
+            format!(
+                "\thandle.add_tool_class::<{}::{}>();",
+                mod_normalized, module
+            )
+        } else {
+            format!("\thandle.add_class::<{}::{}>();", mod_normalized, module)
+        };
 
         mods.push_str(&mod_formatted.to_owned());
         classes.push_str(&class_formatted.to_owned());
@@ -135,11 +143,16 @@ pub fn create_gdnlib_file(name: &str, output_path: &PathBuf, targets: &[&str]) -
     let entry_insert_point = 2;
     let mut dep_insert_point = 6;
 
-    let output_path_str = output_path
+    let mut output_path_str = output_path
         .to_owned()
         .into_os_string()
         .into_string()
-        .expect("Unable to create string from output_path");
+        .expect("Unable to create string from output_path")
+        .replace("\\", "/");
+
+    if !output_path_str.ends_with("/") && !output_path_str.is_empty() {
+        output_path_str.push_str("/");
+    }
 
     let mut o_path = PathBuf::from(output_path);
 
@@ -191,7 +204,9 @@ pub fn create_gdnlib_file(name: &str, output_path: &PathBuf, targets: &[&str]) -
 pub fn create_gdns_file(lib_name: &str, class_name: &str, gdnlib_path: &PathBuf) -> String {
     let gdnlib_path_owned = gdnlib_path.to_owned();
     let gdnlib_os_str = gdnlib_path_owned.into_os_string();
-    let gdnlib_path_str = gdnlib_os_str.to_str().expect("Unable to convert gdnlib path to str");
+    let gdnlib_path_str = gdnlib_os_str
+        .to_str()
+        .expect("Unable to convert gdnlib path to str");
 
     let gdns_string = format!(
         r#"[gd_resource type="NativeScript" load_steps=2 format=2]
@@ -204,7 +219,10 @@ resource_name = "{}"
 class_name = "{}"
 library = ExtResource( 1 )
 "#,
-    gdnlib_path_str, lib_name, class_name, class_name,
+        gdnlib_path_str.replace("\\", "/"),
+        lib_name,
+        class_name,
+        class_name,
     );
 
     return gdns_string;
