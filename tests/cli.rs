@@ -25,7 +25,7 @@ fn new_has_correct_cargo_toml() -> Result<(), Box<dyn Error>> {
     assert_eq!(cargo_toml_split[9], "[dependencies]");
     assert_eq!(
         cargo_toml_split[10],
-        "gdnative = { git = \"https://github.com/GodotNativeTools/godot-rust\" }"
+        "gdnative = \"0.8\""
     );
     assert_eq!(cargo_toml_split[11], "godot_rust_helper_ext = { git = \"https://github.com/robertcorponoi/godot_rust_helper_ext\" }");
 
@@ -288,7 +288,7 @@ fn plugin_has_correct_cargo_toml() -> Result<(), Box<dyn Error>> {
     assert_eq!(cargo_toml_split[9], "[dependencies]");
     assert_eq!(
         cargo_toml_split[10],
-        "gdnative = { git = \"https://github.com/GodotNativeTools/godot-rust\" }"
+        "gdnative = \"0.8\""
     );
     assert_eq!(cargo_toml_split[11], "godot_rust_helper_ext = { git = \"https://github.com/robertcorponoi/godot_rust_helper_ext\" }");
 

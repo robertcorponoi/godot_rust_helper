@@ -1,3 +1,6 @@
+## 4.0.1 / 2020-06-17
+- [PATCH] Changed the gdnative dependency to use crates.io instead of the GitHub repo.
+
 ## 4.0.0 / 2020-05-30
 - [FEATURE] Plugins can now be created with `godot_rust_helper plugin`. This prompted a major version change as the config file has a new entry that indicates whether a library is a plugin or not.
 - [FEATURE] To better match most scripts in Godot, the gdns files are now output as snake_case.
