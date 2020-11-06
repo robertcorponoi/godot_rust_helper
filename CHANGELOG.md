@@ -1,3 +1,6 @@
+## 4.0.2 / 2020-11-05
+- [MISC] Updated dependencies to their latest versions.
+
 ## 4.0.1 / 2020-06-17
 - [PATCH] Changed the gdnative dependency to use crates.io instead of the GitHub repo.
 
