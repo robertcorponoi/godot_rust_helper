@@ -18,7 +18,7 @@ To upgrade:
 $ cargo install --force godot_rust_helper
 ```
 
-Note: This documentation is for version 4.x. Documentation for previous versions can be found below:
+Note: This documentation is for version 4.x and 5.x. Documentation for other versions can be found below:
 
 - [3.x](https://github.com/robertcorponoi/godot_rust_helper/tree/v3.0.0)
 - [2.x](https://github.com/robertcorponoi/godot_rust_helper/tree/v2.1.0)
