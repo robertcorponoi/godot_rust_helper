@@ -25,7 +25,7 @@ fn new_has_correct_cargo_toml() -> Result<(), Box<dyn Error>> {
     assert_eq!(cargo_toml_split[9], "[dependencies]");
     assert_eq!(
         cargo_toml_split[10],
-        "gdnative = \"0.8\""
+        "gdnative = \"0.9.1\""
     );
     assert_eq!(cargo_toml_split[11], "godot_rust_helper_ext = { git = \"https://github.com/robertcorponoi/godot_rust_helper_ext\" }");
 
@@ -288,7 +288,7 @@ fn plugin_has_correct_cargo_toml() -> Result<(), Box<dyn Error>> {
     assert_eq!(cargo_toml_split[9], "[dependencies]");
     assert_eq!(
         cargo_toml_split[10],
-        "gdnative = \"0.8\""
+        "gdnative = \"0.9.1\""
     );
     assert_eq!(cargo_toml_split[11], "godot_rust_helper_ext = { git = \"https://github.com/robertcorponoi/godot_rust_helper_ext\" }");
 
@@ -571,37 +571,41 @@ fn plugin_has_correct_plugin_base_file() -> Result<(), Box<dyn Error>> {
         .expect("Unable to read mod file");
     let plugin_base_gdns_split = plugin_base_gdns.split("\n").collect::<Vec<&str>>();
 
+    assert_eq!(plugin_base_gdns_split[0], "use gdnative::api::EditorPlugin;");
+    assert_eq!(plugin_base_gdns_split[1], "use gdnative::nativescript::user_data;");
+    assert_eq!(plugin_base_gdns_split[2], "");
     assert_eq!(
-        plugin_base_gdns_split[0],
-        "#[derive(gdnative::NativeClass)]"
+        plugin_base_gdns_split[3],
+        "#[derive(NativeClass)]"
     );
     assert_eq!(
-        plugin_base_gdns_split[1],
-        "#[inherit(gdnative::EditorPlugin)]"
+        plugin_base_gdns_split[4],
+        "#[inherit(EditorPlugin)]"
     );
-    assert_eq!(plugin_base_gdns_split[2], "pub struct DirectoryBrowser;");
-    assert_eq!(plugin_base_gdns_split[3], "");
-    assert_eq!(plugin_base_gdns_split[4], "#[gdnative::methods]");
-    assert_eq!(plugin_base_gdns_split[5], "impl DirectoryBrowser {");
+    assert_eq!(plugin_base_gdns_split[5], "#[user_data(user_data::LocalCellData<DirectoryBrowser>)]");
+    assert_eq!(plugin_base_gdns_split[6], "pub struct DirectoryBrowser;");
+    assert_eq!(plugin_base_gdns_split[7], "");
+    assert_eq!(plugin_base_gdns_split[8], "#[gdnative::methods]");
+    assert_eq!(plugin_base_gdns_split[9], "impl DirectoryBrowser {");
     assert_eq!(
-        plugin_base_gdns_split[6],
-        "\tfn _init(_owner: gdnative::EditorPlugin) -> Self {"
+        plugin_base_gdns_split[10],
+        "\tfn new(_owner: &EditorPlugin) -> Self {"
     );
-    assert_eq!(plugin_base_gdns_split[7], "\t\tDirectoryBrowser");
-    assert_eq!(plugin_base_gdns_split[8], "\t}");
-    assert_eq!(plugin_base_gdns_split[9], "");
-    assert_eq!(plugin_base_gdns_split[10], "\t#[export]");
+    assert_eq!(plugin_base_gdns_split[11], "\t\tDirectoryBrowser");
+    assert_eq!(plugin_base_gdns_split[12], "\t}");
+    assert_eq!(plugin_base_gdns_split[13], "");
+    assert_eq!(plugin_base_gdns_split[14], "\t#[export]");
     assert_eq!(
-        plugin_base_gdns_split[11],
-        "\tfn _ready(&self, _owner: gdnative::EditorPlugin) {"
+        plugin_base_gdns_split[15],
+        "\tfn _ready(&self, _owner: &EditorPlugin) {"
     );
     assert_eq!(
-        plugin_base_gdns_split[12],
+        plugin_base_gdns_split[16],
         "\t\tgodot_print!(\"hello, world.\");"
     );
-    assert_eq!(plugin_base_gdns_split[13], "\t}");
-    assert_eq!(plugin_base_gdns_split[14], "}");
-    assert_eq!(plugin_base_gdns_split[15], "");
+    assert_eq!(plugin_base_gdns_split[17], "\t}");
+    assert_eq!(plugin_base_gdns_split[18], "}");
+    assert_eq!(plugin_base_gdns_split[19], "");
 
     cleanup_after_test();
 
@@ -774,14 +778,12 @@ fn create_add_module_to_lib() -> Result<(), Box<dyn Error>> {
     assert_eq!(lib_file_split[4], "");
     assert_eq!(
         lib_file_split[5],
-        "fn init(handle: gdnative::init::InitHandle) {"
+        "fn init(handle: gdnative::nativescript::InitHandle) {"
     );
     assert_eq!(lib_file_split[6], "\thandle.add_class::<hello::Hello>();");
     assert_eq!(lib_file_split[7], "}");
     assert_eq!(lib_file_split[8], "");
-    assert_eq!(lib_file_split[9], "godot_gdnative_init!();");
-    assert_eq!(lib_file_split[10], "godot_nativescript_init!(init);");
-    assert_eq!(lib_file_split[11], "godot_gdnative_terminate!();");
+    assert_eq!(lib_file_split[9], "godot_init!(init);");
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
@@ -818,28 +820,32 @@ fn create_mod_file() -> Result<(), Box<dyn Error>> {
     let mod_file = read_to_string("src/hello.rs").expect("Unable to read module file");
     let mod_file_split = mod_file.split("\n").collect::<Vec<&str>>();
 
-    assert_eq!(mod_file_split[0], "#[derive(gdnative::NativeClass)]");
-    assert_eq!(mod_file_split[1], "#[inherit(gdnative::Node)]");
-    assert_eq!(mod_file_split[2], "pub struct Hello;");
-    assert_eq!(mod_file_split[3], "");
-    assert_eq!(mod_file_split[4], "#[gdnative::methods]");
-    assert_eq!(mod_file_split[5], "impl Hello {");
+    assert_eq!(mod_file_split[0], "use gdnative::api::Node;");
+    assert_eq!(mod_file_split[1], "use gdnative::nativescript::user_data;");
+    assert_eq!(mod_file_split[2], "");
+    assert_eq!(mod_file_split[3], "#[derive(NativeClass)]");
+    assert_eq!(mod_file_split[4], "#[inherit(Node)]");
+    assert_eq!(mod_file_split[5], "#[user_data(user_data::LocalCellData<Hello>)]");
+    assert_eq!(mod_file_split[6], "pub struct Hello;");
+    assert_eq!(mod_file_split[7], "");
+    assert_eq!(mod_file_split[8], "#[gdnative::methods]");
+    assert_eq!(mod_file_split[9], "impl Hello {");
     assert_eq!(
-        mod_file_split[6],
-        "\tfn _init(_owner: gdnative::Node) -> Self {"
+        mod_file_split[10],
+        "\tfn new(_owner: &Node) -> Self {"
     );
-    assert_eq!(mod_file_split[7], "\t\tHello");
-    assert_eq!(mod_file_split[8], "\t}");
-    assert_eq!(mod_file_split[9], "");
-    assert_eq!(mod_file_split[10], "\t#[export]");
+    assert_eq!(mod_file_split[11], "\t\tHello");
+    assert_eq!(mod_file_split[12], "\t}");
+    assert_eq!(mod_file_split[13], "");
+    assert_eq!(mod_file_split[14], "\t#[export]");
     assert_eq!(
-        mod_file_split[11],
-        "\tfn _ready(&self, _owner: gdnative::Node) {"
+        mod_file_split[15],
+        "\tfn _ready(&self, _owner: &Node) {"
     );
-    assert_eq!(mod_file_split[12], "\t\tgodot_print!(\"hello, world.\");");
-    assert_eq!(mod_file_split[13], "\t}");
-    assert_eq!(mod_file_split[14], "}");
-    assert_eq!(mod_file_split[15], "");
+    assert_eq!(mod_file_split[16], "\t\tgodot_print!(\"hello, world.\");");
+    assert_eq!(mod_file_split[17], "\t}");
+    assert_eq!(mod_file_split[18], "}");
+    assert_eq!(mod_file_split[19], "");
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
@@ -987,9 +993,9 @@ fn create_multiple_captial_letters() -> Result<(), Box<dyn Error>> {
     let config_split = config_file.split("\n").collect::<Vec<&str>>();
     let lib_file_split = lib_file.split("\n").collect::<Vec<&str>>();
 
-    assert_eq!(mod_file_split[2], "pub struct MainScene;");
-    assert_eq!(mod_file_split[5], "impl MainScene {");
-    assert_eq!(mod_file_split[7], "\t\tMainScene");
+    assert_eq!(mod_file_split[6], "pub struct MainScene;");
+    assert_eq!(mod_file_split[9], "impl MainScene {");
+    assert_eq!(mod_file_split[11], "\t\tMainScene");
 
     assert_eq!(config_split[3], "modules = [\"MainScene\"]");
 
@@ -1106,15 +1112,13 @@ fn create_multiple_modules_and_add_to_lib() -> Result<(), Box<dyn Error>> {
     assert_eq!(lib_file_split[5], "");
     assert_eq!(
         lib_file_split[6],
-        "fn init(handle: gdnative::init::InitHandle) {"
+        "fn init(handle: gdnative::nativescript::InitHandle) {"
     );
     assert_eq!(lib_file_split[7], "\thandle.add_class::<hello::Hello>();");
     assert_eq!(lib_file_split[8], "\thandle.add_class::<world::World>();");
     assert_eq!(lib_file_split[9], "}");
     assert_eq!(lib_file_split[10], "");
-    assert_eq!(lib_file_split[11], "godot_gdnative_init!();");
-    assert_eq!(lib_file_split[12], "godot_nativescript_init!(init);");
-    assert_eq!(lib_file_split[13], "godot_gdnative_terminate!();");
+    assert_eq!(lib_file_split[11], "godot_init!(init);");
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
@@ -1160,7 +1164,7 @@ fn create_additional_plugin_script() -> Result<(), Box<dyn Error>> {
     assert_eq!(lib_file_split[5], "");
     assert_eq!(
         lib_file_split[6],
-        "fn init(handle: gdnative::init::InitHandle) {"
+        "fn init(handle: gdnative::nativescript::InitHandle) {"
     );
     assert_eq!(
         lib_file_split[7],
@@ -1172,9 +1176,7 @@ fn create_additional_plugin_script() -> Result<(), Box<dyn Error>> {
     );
     assert_eq!(lib_file_split[9], "}");
     assert_eq!(lib_file_split[10], "");
-    assert_eq!(lib_file_split[11], "godot_gdnative_init!();");
-    assert_eq!(lib_file_split[12], "godot_nativescript_init!(init);");
-    assert_eq!(lib_file_split[13], "godot_gdnative_terminate!();");
+    assert_eq!(lib_file_split[11], "godot_init!(init);");
 
     assert_eq!(Path::new("src/folder_structure.rs").exists(), true);
 
@@ -1237,13 +1239,11 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn Error>> {
     assert_eq!(lib_file_split[2], "");
     assert_eq!(
         lib_file_split[3],
-        "fn init(handle: gdnative::init::InitHandle) {"
+        "fn init(handle: gdnative::nativescript::InitHandle) {"
     );
     assert_eq!(lib_file_split[4], "}");
     assert_eq!(lib_file_split[5], "");
-    assert_eq!(lib_file_split[6], "godot_gdnative_init!();");
-    assert_eq!(lib_file_split[7], "godot_nativescript_init!(init);");
-    assert_eq!(lib_file_split[8], "godot_gdnative_terminate!();");
+    assert_eq!(lib_file_split[6], "godot_init!(init);");
     assert_eq!(config_split[3], "modules = []");
     assert_eq!(mod_file_path.exists(), false);
     assert_eq!(hello_gdns_file.exists(), false);
@@ -1257,7 +1257,7 @@ fn destroy_remove_created_module() -> Result<(), Box<dyn Error>> {
 
 // It should create two modules and remove one.
 #[test]
-fn destory_create_two_remove_one() -> Result<(), Box<dyn Error>> {
+fn destroy_create_two_remove_one() -> Result<(), Box<dyn Error>> {
     ensure_correct_dir();
 
     let mut cmd = Command::cargo_bin("godot_rust_helper")?;
@@ -1313,14 +1313,12 @@ fn destory_create_two_remove_one() -> Result<(), Box<dyn Error>> {
     assert_eq!(lib_file_split[4], "");
     assert_eq!(
         lib_file_split[5],
-        "fn init(handle: gdnative::init::InitHandle) {"
+        "fn init(handle: gdnative::nativescript::InitHandle) {"
     );
     assert_eq!(lib_file_split[6], "\thandle.add_class::<hello::Hello>();");
     assert_eq!(lib_file_split[7], "}");
     assert_eq!(lib_file_split[8], "");
-    assert_eq!(lib_file_split[9], "godot_gdnative_init!();");
-    assert_eq!(lib_file_split[10], "godot_nativescript_init!(init);");
-    assert_eq!(lib_file_split[11], "godot_gdnative_terminate!();");
+    assert_eq!(lib_file_split[9], "godot_init!(init);");
 
     assert_eq!(config_split[3], "modules = [\"Hello\"]");
 

@@ -1,3 +1,8 @@
+## 5.0.0 / 2020-11-07
+- [FEATURE] Updated gdnative dependency to its latest version.
+- [FEATURE] Updated generated content to match the new API for the latest version of gdnative.
+- [MISC] Updated tests.
+
 ## 4.0.2 / 2020-11-05
 - [MISC] Updated dependencies to their latest versions.
 

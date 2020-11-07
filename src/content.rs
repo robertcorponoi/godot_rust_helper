@@ -9,12 +9,10 @@ pub fn create_initial_lib_file() -> String {
     return r#"#[macro_use]
 extern crate gdnative;
 
-fn init(handle: gdnative::init::InitHandle) {
+fn init(handle: gdnative::nativescript::InitHandle) {
 }
 
-godot_gdnative_init!();
-godot_nativescript_init!(init);
-godot_gdnative_terminate!();"#
+godot_init!(init);"#
         .to_string();
 }
 
@@ -58,13 +56,11 @@ pub fn create_lib_file(modules: &Vec<String>, is_plugin: bool) -> String {
         r#"#[macro_use]
 extern crate gdnative;
 {}
-fn init(handle: gdnative::init::InitHandle) {{
+fn init(handle: gdnative::nativescript::InitHandle) {{
 {}
 }}
 
-godot_gdnative_init!();
-godot_nativescript_init!(init);
-godot_gdnative_terminate!();"#,
+godot_init!(init);"#,
         mods, classes
     );
 
@@ -78,7 +74,7 @@ godot_gdnative_terminate!();"#,
 /// `name` - The name of the module.
 pub fn create_mod_file(name: &str) -> String {
     let init_string = format!(
-        r#"fn _init(_owner: gdnative::Node) -> Self {{
+        r#"fn new(_owner: &Node) -> Self {{
 {}
 {}"#,
         format!("\t\t{}", name),
@@ -90,14 +86,18 @@ pub fn create_mod_file(name: &str) -> String {
 {}
 {}
 {}"#,
-        "\tfn _ready(&self, _owner: gdnative::Node) {",
+        "\tfn _ready(&self, _owner: &Node) {",
         format!("\t\t{}", "godot_print!(\"hello, world.\");"),
         "\t}"
     );
 
     let mod_file = format!(
-        r#"#[derive(gdnative::NativeClass)]
-#[inherit(gdnative::Node)]
+        r#"use gdnative::api::Node;
+use gdnative::nativescript::user_data;
+
+#[derive(NativeClass)]
+#[inherit(Node)]
+#[user_data(user_data::LocalCellData<{}>)]
 pub struct {};
 
 #[gdnative::methods]
@@ -107,6 +107,7 @@ impl {} {{
 {}
 }}
 "#,
+        name,
         name,
         name,
         format!("\t{}", init_string),

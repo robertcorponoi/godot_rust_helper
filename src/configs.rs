@@ -57,7 +57,7 @@ fn create_cargo_lib() -> CargoLib {
 /// Returns the gdnative dependency to add to the Cargo.toml dependencies.
 /// This is used by the CargoDependencies struct to add the gdnative dependency that is necessary.
 fn add_gdnative_dep() -> String {
-	return String::from("0.8");
+	return String::from("0.9.1");
 }
 
 /// Returns the godot_rust_helper_extensions dependency to add to the Cargo.toml dependencies.
