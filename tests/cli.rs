@@ -6,6 +6,8 @@ use std::fs::{read_to_string, remove_dir_all, remove_file};
 use std::path::Path;
 use std::process::Command;
 
+const PATH_TO_GODOT_RUST_HELPER: &str = "C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper";
+
 // It should create a new library with the default Cargo.toml file.
 #[test]
 fn new_has_correct_cargo_toml() -> Result<(), Box<dyn Error>> {
@@ -56,10 +58,10 @@ fn new_has_correct_default_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[4], "plugin = false");
     assert_eq!(config_split[5], "");
     assert_eq!(config_split[6], "[paths]");
-    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[7], format!("lib = \"{}\\\\tests\\\\platformer_modules\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[8], format!("godot = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[9], format!("output = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[10], format!("nativescript = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
 
     assert_eq!(gdnlib_path.exists(), true);
 
@@ -170,10 +172,10 @@ fn new_specify_nativescript_correct_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[4], "plugin = false");
     assert_eq!(config_split[5], "");
     assert_eq!(config_split[6], "[paths]");
-    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"");
+    assert_eq!(config_split[7], format!("lib = \"{}\\\\tests\\\\platformer_modules\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[8], format!("godot = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[9], format!("output = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[10], format!("nativescript = \"{}\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"", PATH_TO_GODOT_RUST_HELPER));
 
     cleanup_after_test();
 
@@ -205,10 +207,10 @@ fn new_has_correct_targets_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[4], "plugin = false");
     assert_eq!(config_split[5], "");
     assert_eq!(config_split[6], "[paths]");
-    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
+    assert_eq!(config_split[7], format!("lib = \"{}\\\\tests\\\\platformer_modules\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[8], format!("godot = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[9], format!("output = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[10], format!("nativescript = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
 
     cleanup_after_test();
 
@@ -326,10 +328,10 @@ fn plugin_has_correct_default_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[4], "plugin = true");
     assert_eq!(config_split[5], "");
     assert_eq!(config_split[6], "[paths]");
-    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\directory_browser\"");
-    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"");
-    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"");
+    assert_eq!(config_split[7], format!("lib = \"{}\\\\tests\\\\directory_browser\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[8], format!("godot = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[9], format!("output = \"{}\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[10], format!("nativescript = \"{}\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"", PATH_TO_GODOT_RUST_HELPER));
 
     assert_eq!(gdnlib_path.exists(), true);
 
@@ -414,10 +416,10 @@ fn plugin_has_correct_targets_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[4], "plugin = true");
     assert_eq!(config_split[5], "");
     assert_eq!(config_split[6], "[paths]");
-    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\directory_browser\"");
-    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"");
-    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"");
+    assert_eq!(config_split[7], format!("lib = \"{}\\\\tests\\\\directory_browser\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[8], format!("godot = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[9], format!("output = \"{}\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[10], format!("nativescript = \"{}\\\\tests\\\\platformer\\\\addons\\\\directory_browser\"", PATH_TO_GODOT_RUST_HELPER));
 
     cleanup_after_test();
 
@@ -731,10 +733,10 @@ fn create_add_module_to_config() -> Result<(), Box<dyn Error>> {
     assert_eq!(config_split[4], "plugin = false");
     assert_eq!(config_split[5], "");
     assert_eq!(config_split[6], "[paths]");
-    assert_eq!(config_split[7], "lib = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer_modules\"");
-    assert_eq!(config_split[8], "godot = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\"");
-    assert_eq!(config_split[9], "output = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-output\"");
-    assert_eq!(config_split[10], "nativescript = \"C:\\\\Users\\\\Bob\\\\Documents\\\\Projects\\\\godot_rust_helper\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"");
+    assert_eq!(config_split[7], format!("lib = \"{}\\\\tests\\\\platformer_modules\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[8], format!("godot = \"{}\\\\tests\\\\platformer\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[9], format!("output = \"{}\\\\tests\\\\platformer\\\\godot-rust-helper-output\"", PATH_TO_GODOT_RUST_HELPER));
+    assert_eq!(config_split[10], format!("nativescript = \"{}\\\\tests\\\\platformer\\\\godot-rust-helper-scripts\"", PATH_TO_GODOT_RUST_HELPER));
 
     set_current_dir("../").expect("Unable to change to parent directory");
 
