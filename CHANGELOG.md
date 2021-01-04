@@ -1,3 +1,8 @@
+## 5.1.0 / 2021-01-03
+- [FEATURE] Updated dependencies.
+- [FEATURE] Updated tests to be easier to run and more easily managed.
+- [PATCH] Fixed an issue with the `destroy` command where it attempted to destroy a module named `Module` instead of `module`.
+
 ## 5.0.0 / 2020-11-07
 - [FEATURE] Updated gdnative dependency to its latest version.
 - [FEATURE] Updated generated content to match the new API for the latest version of gdnative.

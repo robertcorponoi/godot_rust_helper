@@ -397,7 +397,7 @@ pub fn destroy_module(name: &str) {
     }
 
     // Remove the corresponding .gdns file from the Godot project directory.
-    let gdns_file_name = format!("{}.gdns", name);
+    let gdns_file_name = format!("{}.gdns", name.to_lowercase());
     Command::new("rm")
         .arg(&config.paths.nativescript.join(gdns_file_name))
         .status()

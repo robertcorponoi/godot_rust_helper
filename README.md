@@ -359,11 +359,7 @@ $ godot_rust_helper rebase ../path/to/game --targets=linux,osx
 
 ## **Tests**
 
-The tests require some setup in order to be run:
-
-1. Create a new Godot project named platformer inside of the `test` directory of `godot_rust_helper`.
-2. In the `tests/cli.rs` file, change the value of the `PATH_TO_GODOT_RUST_HELPER` with the full path to godot_rust_helper. This is used to verify the locations of scripts and other files in the config files.
-3. The tests need to be run one by one since there's setup and teardown for every test. To do this, run the tests with:
+Make sure you're in the root directory of godot_rust_helper and run:
 
 ```bash
 $ cargo test -- --test-threads=1
