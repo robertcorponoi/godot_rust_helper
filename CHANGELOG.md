@@ -1,3 +1,6 @@
+## 5.1.1 / 2021-01-09
+- [HOTFIX] Fixed issue with build not building for different targets.
+
 ## 5.1.0 / 2021-01-03
 - [FEATURE] Updated dependencies.
 - [FEATURE] Updated tests to be easier to run and more easily managed.

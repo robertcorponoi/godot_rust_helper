@@ -436,29 +436,55 @@ pub fn build_library() {
 
     // Get the path to where the build files are stored.
     let targets_dir = root_dir.join("target").join("debug");
-    for target in &config.general.targets {
-        let ext = if target == "linux" {
-            "so"
-        } else if target == "osx" {
-            "dylib"
-        } else if target == "windows" {
-            "dll"
-        } else {
-            exit(1);
-        };
-        let extra = if cfg!(windows) { "" } else { "lib" };
 
-        let file = format!("{}{}.{}", extra, config.general.name, ext);
-        let file_path = targets_dir.join(file);
+    let ext = utils::get_dynamic_library_ext();
+    println!("{}{}", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", ext);
+    let extra = if cfg!(windows) { "" } else { "lib" };
 
-        Command::new("cp")
-            .arg(file_path)
-            .arg(&config.paths.godot.join(&config.paths.output))
-            .output()
-            .expect("Unable to copy build files");
+    let file = format!("{}{}.{}", extra, config.general.name, ext);
+    let file_path = targets_dir.join(file);
 
-        println!("{}", "build complete".green());
-    }
+    Command::new("cp")
+        .arg(file_path)
+        .arg(&config.paths.godot.join(&config.paths.output))
+        .output()
+        .expect("Unable to copy build files");
+
+    println!("{}", "build complete".green());
+
+    // Delete this next iteration if not needed anymore.
+    // for target in &config.general.targets {
+    //     // Since the user can have multiple targets, we need to check what target
+    //     // they can actually build for and set that as the target to use.
+    //     match target.as_ref() {
+    //         "linux" => {
+              
+    //         },
+    //         _ => exit(1)
+    //     }
+
+    //     let ext = if target == "linux" {
+    //         "so"
+    //     } else if target == "osx" {
+    //         "dylib"
+    //     } else if target == "windows" {
+    //         "dll"
+    //     } else {
+    //         exit(1);
+    //     };
+    //     let extra = if cfg!(windows) { "" } else { "lib" };
+
+    //     let file = format!("{}{}.{}", extra, config.general.name, ext);
+    //     let file_path = targets_dir.join(file);
+
+    //     Command::new("cp")
+    //         .arg(file_path)
+    //         .arg(&config.paths.godot.join(&config.paths.output))
+    //         .output()
+    //         .expect("Unable to copy build files");
+
+    //     println!("{}", "build complete".green());
+    // }
 }
 
 /// Watches for changes in the src directory of the library and then automatically runs the build command.

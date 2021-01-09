@@ -1,6 +1,6 @@
 [package]
 name = "godot_rust_helper"
-version = "5.1.0"
+version = "5.1.1"
 authors = ["Robert Corponoi <robertcorponoi@gmail.com>"]
 license = "MIT"
 description = "A simple CLI tool to help you create and update Rust modules for your Godot projects"
