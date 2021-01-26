@@ -13,6 +13,7 @@ use crate::utils;
 
 use chrono::prelude::*;
 use colored::*;
+use convert_case::{Case, Casing};
 use notify::{op, raw_watcher, RawEvent, RecursiveMode, Watcher};
 use pathdiff::diff_paths;
 
@@ -255,7 +256,7 @@ pub fn create_module(name: &str) {
     }
 
     // Split the module name on capital letters and then make it all lowercase to use in some places.
-    let name_normalized = utils::format_str(name.to_string());
+    let name_normalized = name.to_case(Case::Snake);
 
     // Check the config to see if a module with the same name was already created.
     let config_string =
@@ -349,7 +350,7 @@ pub fn destroy_module(name: &str) {
     }
 
     // Split the module name on capital letters and then make it all lowercase to use when removing the module file.
-    let name_normalized = utils::format_str(name.to_string());
+    let name_normalized = name.to_case(Case::Snake);
 
     // Remove the module from the config file and save it again.
     let config_string =
@@ -458,7 +459,6 @@ pub fn build_library() {
     //     // they can actually build for and set that as the target to use.
     //     match target.as_ref() {
     //         "linux" => {
-              
     //         },
     //         _ => exit(1)
     //     }
@@ -613,7 +613,10 @@ pub fn rebase(godot_project_dir: PathBuf, targets: String) {
 /// `output` - As of godot_rust_helper 2.x the 'rust-modules' directory no longer exists and is customizable. You can change this to a different directory at this time but you'll have to fix all references in Godot.
 /// `nativescript_path` - As of godot_rust_helper 3.x the nativescript files can be placed into a custom directory within the Godot project.
 pub fn update(output: PathBuf, nativescript_path: PathBuf) {
-    println!("{}", "Updating project from an older version of godot_rust_helper...".white());
+    println!(
+        "{}",
+        "Updating project from an older version of godot_rust_helper...".white()
+    );
 
     // Check to see if we are in a library created by the `new` command.
     let current_dir_path = current_dir().expect("Unable to get current directory");
@@ -745,7 +748,7 @@ pub fn update(output: PathBuf, nativescript_path: PathBuf) {
 
         // Now we gotta go through each of the components created and check to see if they are still using `use godot_rust_helper_extensions` and change it to ext just like above.
         for module in new_config.general.modules {
-            let module_filename = format!("{}.rs", utils::format_str(module));
+            let module_filename = format!("{}.rs", module.to_case(Case::Snake));
             let mut module_path = PathBuf::from("src");
             module_path.push(module_filename);
 
@@ -988,7 +991,7 @@ pub fn create_plugin(
 
     // Create all of the variations of the plugin names we'll need.
     let plugin_name = &name;
-    let plugin_name_normalized = utils::format_str(plugin_name.to_string());
+    let plugin_name_normalized = plugin_name.to_case(Case::Snake);
     // Create all of the paths we'll need for the plugin files.
     let plugin_path = godot_path.join("addons").join(&plugin_name_normalized);
     let plugin_cfg_path = plugin_path.join("plugin.cfg");
@@ -1082,7 +1085,7 @@ pub fn create_plugin(
     // Run `cargo create` to create the module's base script file that the configuration expects.
     match Command::new("godot_rust_helper")
         .arg("create")
-        .arg(plugin_name.replace(" ", ""))
+        .arg(plugin_name.to_case(Case::Pascal))
         .output()
     {
         Ok(_v) => (),
@@ -1092,7 +1095,7 @@ pub fn create_plugin(
         }
     }
     // Since this base script is a bit different, all instances of Node need to be swapped with EditorPlugin and then we write it back.
-    let base_plugin_script_path = format!("src/{}.rs", plugin_name_normalized);
+    let base_plugin_script_path = format!("src/{}.rs", name.to_case(Case::Snake));
     let base_plugin_script =
         read_to_string(&base_plugin_script_path).expect("Unable to read plugin's base script");
     let updated_base_plugin_script = base_plugin_script.replace("Node", "EditorPlugin");
