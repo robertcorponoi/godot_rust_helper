@@ -1,3 +1,6 @@
+## 5.1.3 / 2021-02-10
+- [HOTFIX] Fixed issue with dynamic library files not getting copied over if library name contains a dash.
+
 ## 5.1.1 / 2021-01-09
 - [HOTFIX] Fixed issue with build not building for different targets.
 

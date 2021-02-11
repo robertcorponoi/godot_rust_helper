@@ -439,11 +439,10 @@ pub fn build_library() {
     let targets_dir = root_dir.join("target").join("debug");
 
     let ext = utils::get_dynamic_library_ext();
-    println!("{}{}", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", ext);
     let extra = if cfg!(windows) { "" } else { "lib" };
 
     let file = format!("{}{}.{}", extra, config.general.name, ext);
-    let file_path = targets_dir.join(file);
+    let file_path = targets_dir.join(file.to_case(Case::Snake));
 
     Command::new("cp")
         .arg(file_path)

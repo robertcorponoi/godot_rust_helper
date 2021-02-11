@@ -101,6 +101,9 @@ pub fn cleanup_test_files() {
   if Path::new("platformer_modules").exists() {
     remove_dir_all("platformer_modules").expect("Unable to remove library dir");
   }
+  if Path::new("platformer-modules").exists() {
+    remove_dir_all("platformer-modules").expect("Unable to remove library dir");
+  }
 
   if Path::new("directory_browser").exists() {
     remove_dir_all("directory_browser").expect("Unable to remove plugin dir");
