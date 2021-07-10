@@ -2,6 +2,10 @@
   <img width="250" height="250" src="https://raw.githubusercontent.com/robertcorponoi/graphics/master/godot-rust-helper/godot-rust-helper-logo.png">
 </p>
 
+## Archived
+
+This crate has been deprecated and replaced by [Godot Rust CLI](https://github.com/robertcorponoi/godot-rust-cli). This repository is no longer maintained.
+
 <h1 align="center">Godot Rust Helper</h1>
 
 <p align="center">A simple CLI tool to help you create and update Rust components for your Godot projects.<p>
